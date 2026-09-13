@@ -36,7 +36,7 @@ public static class PermissionPolicies
     public const string AccountsView = "accounts:view"; public const string AccountsAdd = "accounts:add";
     public const string ReportsView = "reports:view"; public const string ComplianceView = "compliance:view";
     public const string StoresView = "stores:view"; public const string StoresAdd = "stores:add";
-    public const string UsersView = "users:view"; public const string UsersEdit = "users:edit";
+    public const string UsersView = "users:view"; public const string UsersAdd = "users:add"; public const string UsersEdit = "users:edit";
     public const string DataToolsView = "data-tools:view"; public const string DataToolsAdd = "data-tools:add";
     public const string SettingsView = "settings:view"; public const string SettingsEdit = "settings:edit";
 }
