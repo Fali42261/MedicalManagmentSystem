@@ -10,6 +10,7 @@ import { saleApi } from '../services/sale.api'
 import { customerApi } from '../services/customer.api'
 import { returnApi } from '../services/return.api'
 import { schemeApi } from '../services/scheme.api'
+import { accountApi } from '../services/account.api'
 import { mapApiData } from '../utils/apiMappers'
 import { PharmacyDataContext } from './pharmacyData.context'
 
@@ -21,7 +22,7 @@ export function PharmacyDataProvider({ children }) {
     try {
       const session = authApi.getSession()
       const canView = (moduleKey) => session?.menu?.some(item => item.key === moduleKey && item.permissions.includes('View'))
-      const [products, users, carts, todos, medicines, inventoryMovements, medicineMasters, suppliers, purchases, sales, saleCatalog, customers, returns, schemes] = await Promise.all([
+      const [products, users, carts, todos, medicines, inventoryMovements, medicineMasters, suppliers, purchases, sales, saleCatalog, customers, returns, schemes, accounts] = await Promise.all([
         pharmacyApi.getProducts(),
         pharmacyApi.getUsers(),
         pharmacyApi.getCarts(),
@@ -36,6 +37,7 @@ export function PharmacyDataProvider({ children }) {
         canView('customers') ? customerApi.getAll() : Promise.resolve(null),
         canView('returns') ? returnApi.getAll() : Promise.resolve(null),
         canView('schemes') ? schemeApi.getAll() : Promise.resolve(null),
+        canView('accounts') ? accountApi.getAll() : Promise.resolve(null),
       ])
       const mapped = mapApiData({ products: products.products, users: users.users, carts: carts.carts, todos: todos.todos })
       if (medicines || saleCatalog) mapped.medicines = medicines || saleCatalog
@@ -47,6 +49,7 @@ export function PharmacyDataProvider({ children }) {
       if (customers) mapped.customers = customers
       if (returns) mapped.returns = returns
       if (schemes) mapped.schemes = schemes
+      if (accounts) mapped.ledger = accounts
       setState({
         loading: false,
         error: '',
@@ -181,6 +184,7 @@ export function PharmacyDataProvider({ children }) {
   const deleteCustomer = useCallback(async (id) => { await customerApi.delete(id); updateCollection('customers', rows => rows.filter(row => row.id !== id)) }, [updateCollection])
   const createSaleReturn = useCallback(async (payload) => { const item = await returnApi.createSale(payload); updateCollection('returns', rows => [item, ...rows]); await refreshSaleDependencies().catch(() => undefined); return item }, [refreshSaleDependencies, updateCollection])
   const createScheme = useCallback(async p=>{const x=await schemeApi.create(p);updateCollection('schemes',r=>[x,...r]);return x},[updateCollection]); const updateScheme=useCallback(async(id,p)=>{const x=await schemeApi.update(id,p);updateCollection('schemes',r=>r.map(a=>a.id===id?x:a));return x},[updateCollection]); const deleteScheme=useCallback(async id=>{await schemeApi.delete(id);updateCollection('schemes',r=>r.filter(a=>a.id!==id))},[updateCollection])
+  const createAccountEntry = useCallback(async p=>{const x=await accountApi.create(p);const rows=await accountApi.getAll();setState(c=>({...c,data:{...c.data,ledger:rows}}));return x},[])
 
   const createPartner = useCallback(async (_type, payload) => {
     const [firstName, ...last] = payload.name.trim().split(' ')
@@ -199,7 +203,7 @@ export function PharmacyDataProvider({ children }) {
     return created
   }, [updateCollection])
 
-  const mutations = useMemo(() => ({ createMedicine, updateMedicine, deleteMedicine, adjustStock, createMedicineMaster, updateMedicineMaster, deleteMedicineMaster, createSupplier, updateSupplier, deleteSupplier, createPurchase, getPurchase, cancelPurchase, createSale, getSale, cancelSale, createCustomer, updateCustomer, deleteCustomer, createSaleReturn, createScheme, updateScheme, deleteScheme, createPartner, deletePartner, createTransaction }), [createMedicine, updateMedicine, deleteMedicine, adjustStock, createMedicineMaster, updateMedicineMaster, deleteMedicineMaster, createSupplier, updateSupplier, deleteSupplier, createPurchase, getPurchase, cancelPurchase, createSale, getSale, cancelSale, createCustomer, updateCustomer, deleteCustomer, createSaleReturn, createScheme, updateScheme, deleteScheme, createPartner, deletePartner, createTransaction])
+  const mutations = useMemo(() => ({ createMedicine, updateMedicine, deleteMedicine, adjustStock, createMedicineMaster, updateMedicineMaster, deleteMedicineMaster, createSupplier, updateSupplier, deleteSupplier, createPurchase, getPurchase, cancelPurchase, createSale, getSale, cancelSale, createCustomer, updateCustomer, deleteCustomer, createSaleReturn, createScheme, updateScheme, deleteScheme, createAccountEntry, createPartner, deletePartner, createTransaction }), [createMedicine, updateMedicine, deleteMedicine, adjustStock, createMedicineMaster, updateMedicineMaster, deleteMedicineMaster, createSupplier, updateSupplier, deleteSupplier, createPurchase, getPurchase, cancelPurchase, createSale, getSale, cancelSale, createCustomer, updateCustomer, deleteCustomer, createSaleReturn, createScheme, updateScheme, deleteScheme, createAccountEntry, createPartner, deletePartner, createTransaction])
   const value = useMemo(() => ({ ...state, reload: load, api: pharmacyApi, mutations }), [state, load, mutations])
   return <PharmacyDataContext.Provider value={value}>{children}</PharmacyDataContext.Provider>
 }

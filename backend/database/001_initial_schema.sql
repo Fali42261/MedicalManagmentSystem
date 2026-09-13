@@ -327,6 +327,11 @@ BEGIN
  CREATE TABLE dbo.Schemes(Id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Schemes PRIMARY KEY,Name NVARCHAR(160) NOT NULL,AppliesTo NVARCHAR(80) NOT NULL,SchemeType NVARCHAR(30) NOT NULL,Value DECIMAL(18,2) NOT NULL,ValidFrom DATE NOT NULL,ValidUntil DATE NOT NULL,IsActive BIT NOT NULL CONSTRAINT DF_Schemes_IsActive DEFAULT(1),IsDeleted BIT NOT NULL CONSTRAINT DF_Schemes_IsDeleted DEFAULT(0),CreatedByUserId BIGINT NOT NULL,CreatedAtUtc DATETIME2 NOT NULL CONSTRAINT DF_Schemes_Created DEFAULT(SYSUTCDATETIME()),UpdatedByUserId BIGINT NULL,UpdatedAtUtc DATETIME2 NULL,RowVersion ROWVERSION NOT NULL,CONSTRAINT FK_Schemes_CreatedBy FOREIGN KEY(CreatedByUserId) REFERENCES dbo.Users(Id),CONSTRAINT CK_Schemes_Dates CHECK(ValidUntil>=ValidFrom AND Value>=0));
  CREATE INDEX IX_Schemes_ActiveDates ON dbo.Schemes(IsActive,ValidFrom,ValidUntil) WHERE IsDeleted=0;
 END;
+IF OBJECT_ID('dbo.AccountVoucherSequence','SO') IS NULL CREATE SEQUENCE dbo.AccountVoucherSequence AS BIGINT START WITH 1 INCREMENT BY 1;
+IF OBJECT_ID('dbo.AccountEntries','U') IS NULL
+BEGIN
+ CREATE TABLE dbo.AccountEntries(Id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_AccountEntries PRIMARY KEY,VoucherNumber NVARCHAR(40) NOT NULL CONSTRAINT UQ_AccountEntries_Voucher UNIQUE,EntryType NVARCHAR(20) NOT NULL,AccountName NVARCHAR(160) NOT NULL,PaymentMode NVARCHAR(20) NOT NULL,Amount DECIMAL(18,2) NOT NULL,Reference NVARCHAR(120) NULL,IsDeleted BIT NOT NULL CONSTRAINT DF_AccountEntries_IsDeleted DEFAULT(0),CreatedByUserId BIGINT NOT NULL,CreatedAtUtc DATETIME2 NOT NULL CONSTRAINT DF_AccountEntries_Created DEFAULT(SYSUTCDATETIME()),CONSTRAINT FK_AccountEntries_User FOREIGN KEY(CreatedByUserId) REFERENCES dbo.Users(Id),CONSTRAINT CK_AccountEntries_Amount CHECK(Amount>0),CONSTRAINT CK_AccountEntries_Type CHECK(EntryType IN('Expense','Receipt','Payment','Income')),CONSTRAINT CK_AccountEntries_Mode CHECK(PaymentMode IN('Cash','Bank','UPI','Card'))); CREATE INDEX IX_AccountEntries_Date ON dbo.AccountEntries(CreatedAtUtc DESC) WHERE IsDeleted=0;
+END;
 
 MERGE dbo.Roles AS target
 USING (VALUES

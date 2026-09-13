@@ -38,6 +38,7 @@ export const BACKEND_API_ENDPOINTS = Object.freeze({
   RETURNS: '/returns',
   SALES_RETURNS: '/returns/sales',
   SCHEMES: '/schemes', SCHEME_BY_ID: (id) => `/schemes/${id}`,
+  ACCOUNTS: '/accounts',
 })
 
 export const API_QUERY = Object.freeze({
