@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
+import ApiState from './components/ApiState'
 import Icon from './components/Icon'
+import { PharmacyDataProvider } from './context/PharmacyDataContext'
+import { usePharmacyData } from './hooks/usePharmacyData'
 import { Accounts, Compliance, Customers, Dashboard, DataTools, Inventory, Login, Masters, Medicines, Purchases, Reports, Returns, Sales, Schemes, Settings, Stores, Suppliers, UsersRoles } from './pages'
 import './App.css'
 
@@ -21,7 +24,12 @@ function getInitialTheme() {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
-function App() {
+function WorkspaceData({ children }) {
+  const { loading, error, reload } = usePharmacyData()
+  return <ApiState loading={loading} error={error} onRetry={reload}>{children}</ApiState>
+}
+
+function AppContent() {
   const [page, setPage] = useState(() => window.location.hash.slice(1) || 'dashboard')
   const [theme, setThemeState] = useState(getInitialTheme)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -95,11 +103,15 @@ function App() {
           <div className="global-search-wrap"><label className="global-search"><Icon name="search" size={18}/><input value={globalQuery} onChange={(e) => setGlobalQuery(e.target.value)} placeholder="Search modules and records"/><kbd>⌘ K</kbd></label>{globalQuery && <div className="global-results">{searchTargets.filter(item => item.label.toLowerCase().includes(globalQuery.toLowerCase())).map(item => <button key={item.key} onClick={() => { navigate(item.key); setGlobalQuery('') }}><Icon name="search" size={15}/><span><b>{item.label}</b><small>{item.description}</small></span></button>)}{!searchTargets.some(item => item.label.toLowerCase().includes(globalQuery.toLowerCase())) && <p>No matching module found</p>}</div>}</div>
           <div className="topbar-actions"><button className="icon-button" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} aria-label="Toggle theme"><Icon name={theme === 'light' ? 'moon' : 'sun'} size={19}/></button><div className="notification-wrap"><button className="icon-button notification" aria-label="Notifications" onClick={() => setNotificationsOpen(!notificationsOpen)}><Icon name="bell" size={19}/><i></i></button>{notificationsOpen && <div className="notification-menu"><div><b>Notifications</b><button onClick={() => { setNotificationsOpen(false); showToast('All notifications marked as read') }}>Mark all read</button></div><button onClick={() => { navigate('inventory'); setNotificationsOpen(false) }}><span className="alert-dot"><Icon name="alert" size={14}/></span><span><b>18 medicines are low in stock</b><small>Review reorder levels</small></span></button><button onClick={() => { navigate('inventory'); setNotificationsOpen(false) }}><span className="alert-dot warning"><Icon name="pill" size={14}/></span><span><b>12 batches are expiring soon</b><small>Within the next 30 days</small></span></button></div>}</div><button className="profile" onClick={() => navigate('login')} title="Open sign-in screen"><span>A</span><div><b>Ali</b><small>Administrator</small></div><span className="profile-chevron">⌄</span></button></div>
         </header>
-        <main className="main-content">{pages[page] || pages.dashboard}</main>
+        <main className="main-content"><WorkspaceData>{pages[page] || pages.dashboard}</WorkspaceData></main>
       </div>
       {toast && <div className="toast"><span><Icon name="check" size={16}/></span>{toast}</div>}
     </div>
   )
+}
+
+function App() {
+  return <PharmacyDataProvider><AppContent/></PharmacyDataProvider>
 }
 
 export default App

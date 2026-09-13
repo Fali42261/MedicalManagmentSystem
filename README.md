@@ -1,16 +1,53 @@
-# React + Vite
+# MediDesk Pharmacy ERP UI
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Production-structured React and Vite frontend for medical-store inventory, purchases, sales, billing, suppliers, customers, accounts, GST, reports and administration.
 
-Currently, two official plugins are available:
+## Setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+cp .env.example .env
+npm install
+npm run dev
+```
 
-## React Compiler
+## Environment configuration
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+All browser environment variables use the `VITE_` prefix. Development data comes from [DummyJSON](https://dummyjson.com/) and can later be replaced by the .NET API without changing UI components.
 
-## Expanding the Oxlint configuration
+```env
+VITE_API_BASE_URL=https://dummyjson.com
+VITE_API_TIMEOUT_MS=12000
+VITE_API_RETRY_COUNT=1
+VITE_APP_NAME=MediDesk
+VITE_APP_ENV=development
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+Never commit `.env`. Add new keys to `.env.example` with safe placeholder values.
+
+## Source structure
+
+```text
+src/
+  components/   Reusable UI and API-state components
+  config/       Validated environment configuration
+  constants/    API endpoints, HTTP methods and static keys
+  context/      Shared API-backed application state
+  hooks/        Reusable React hooks
+  services/     Generic HTTP client and business API methods
+  utils/        API response-to-UI model mappers
+  App.jsx       Application shell and routing
+  pages.jsx     Feature screens
+```
+
+## Data flow
+
+Screens consume `usePharmacyData`. The provider calls `pharmacy.api.js`, which uses the generic client and endpoint constants. Loading, retry and error states are handled centrally.
+
+CRUD business methods are available for medicine, partner and transaction operations. DummyJSON simulates writes but does not persist them; the service interface can be pointed to the future .NET backend.
+
+## Quality checks
+
+```bash
+npm run lint
+npm run build
+```
