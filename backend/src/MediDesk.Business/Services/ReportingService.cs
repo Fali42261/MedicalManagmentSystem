@@ -1,0 +1,2 @@
+using MediDesk.Business.Interfaces;using MediDesk.Common.Contracts.Reporting;namespace MediDesk.Business.Services;public sealed class ReportingService(IReportingRepository r):IReportingService{public Task<ReportSummaryDto>GetSummaryAsync(ReportQuery q,CancellationToken ct)=>r.GetSummaryAsync(q,ct);public Task<ComplianceSummaryDto>GetComplianceAsync(ReportQuery q,CancellationToken ct)=>r.GetComplianceAsync(q,ct);}
+

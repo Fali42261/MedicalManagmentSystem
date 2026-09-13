@@ -11,6 +11,7 @@ import { customerApi } from '../services/customer.api'
 import { returnApi } from '../services/return.api'
 import { schemeApi } from '../services/scheme.api'
 import { accountApi } from '../services/account.api'
+import { reportApi } from '../services/report.api'
 import { mapApiData } from '../utils/apiMappers'
 import { PharmacyDataContext } from './pharmacyData.context'
 
@@ -22,7 +23,7 @@ export function PharmacyDataProvider({ children }) {
     try {
       const session = authApi.getSession()
       const canView = (moduleKey) => session?.menu?.some(item => item.key === moduleKey && item.permissions.includes('View'))
-      const [products, users, carts, todos, medicines, inventoryMovements, medicineMasters, suppliers, purchases, sales, saleCatalog, customers, returns, schemes, accounts] = await Promise.all([
+      const [products, users, carts, todos, medicines, inventoryMovements, medicineMasters, suppliers, purchases, sales, saleCatalog, customers, returns, schemes, accounts, reportSummary, complianceSummary] = await Promise.all([
         pharmacyApi.getProducts(),
         pharmacyApi.getUsers(),
         pharmacyApi.getCarts(),
@@ -38,6 +39,8 @@ export function PharmacyDataProvider({ children }) {
         canView('returns') ? returnApi.getAll() : Promise.resolve(null),
         canView('schemes') ? schemeApi.getAll() : Promise.resolve(null),
         canView('accounts') ? accountApi.getAll() : Promise.resolve(null),
+        canView('reports') ? reportApi.summary({}) : Promise.resolve(null),
+        canView('compliance') ? reportApi.compliance({}) : Promise.resolve(null),
       ])
       const mapped = mapApiData({ products: products.products, users: users.users, carts: carts.carts, todos: todos.todos })
       if (medicines || saleCatalog) mapped.medicines = medicines || saleCatalog
@@ -50,6 +53,8 @@ export function PharmacyDataProvider({ children }) {
       if (returns) mapped.returns = returns
       if (schemes) mapped.schemes = schemes
       if (accounts) mapped.ledger = accounts
+      if (reportSummary) { mapped.reportRows = reportSummary.topMedicines.map(x => ({ name: x.name, sold: x.units, sales: Number(x.sales), profit: Number(x.profit) })); mapped.reportSummary = reportSummary }
+      if (complianceSummary) mapped.complianceSummary = complianceSummary
       setState({
         loading: false,
         error: '',

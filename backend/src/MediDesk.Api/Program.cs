@@ -92,6 +92,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(PermissionPolicies.ReturnsAdd, policy => policy.AddRequirements(new PermissionRequirement("returns", "Add")));
     options.AddPolicy(PermissionPolicies.SchemesView, policy => policy.AddRequirements(new PermissionRequirement("schemes", "View"))); options.AddPolicy(PermissionPolicies.SchemesAdd, policy => policy.AddRequirements(new PermissionRequirement("schemes", "Add"))); options.AddPolicy(PermissionPolicies.SchemesEdit, policy => policy.AddRequirements(new PermissionRequirement("schemes", "Edit"))); options.AddPolicy(PermissionPolicies.SchemesDelete, policy => policy.AddRequirements(new PermissionRequirement("schemes", "Delete")));
     options.AddPolicy(PermissionPolicies.AccountsView, policy => policy.AddRequirements(new PermissionRequirement("accounts", "View"))); options.AddPolicy(PermissionPolicies.AccountsAdd, policy => policy.AddRequirements(new PermissionRequirement("accounts", "Add")));
+    options.AddPolicy(PermissionPolicies.ReportsView, policy => policy.AddRequirements(new PermissionRequirement("reports", "View"))); options.AddPolicy(PermissionPolicies.ComplianceView, policy => policy.AddRequirements(new PermissionRequirement("compliance", "View")));
 });
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
@@ -121,6 +122,7 @@ builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<IReturnRepository, ReturnRepository>();
 builder.Services.AddScoped<ISchemeRepository, SchemeRepository>();
 builder.Services.AddScoped<IAccountRepository, AccountRepository>();
+builder.Services.AddScoped<IReportingRepository, ReportingRepository>();
 builder.Services.AddScoped<INavigationService, NavigationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IMedicineService, MedicineService>();
@@ -133,6 +135,7 @@ builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IReturnService, ReturnService>();
 builder.Services.AddScoped<ISchemeService, SchemeService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<IReportingService, ReportingService>();
 builder.Services.AddScoped<IPasswordHasher<UserRecord>, PasswordHasher<UserRecord>>();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 builder.Services.AddHostedService<BootstrapAdminService>();
