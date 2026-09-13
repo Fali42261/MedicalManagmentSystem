@@ -94,7 +94,7 @@ function AppContent() {
     inventory: <Inventory {...commonProps} permissions={new Set(session?.menu?.find(item => item.key === 'inventory')?.permissions || [])} />,
     purchases: <Purchases {...commonProps} permissions={new Set(session?.menu?.find(item => item.key === 'purchases')?.permissions || [])} />,
     sales: <Sales {...commonProps} permissions={new Set(session?.menu?.find(item => item.key === 'sales')?.permissions || [])} />,
-    returns: <Returns {...commonProps} />,
+    returns: <Returns {...commonProps} permissions={new Set(session?.menu?.find(item => item.key === 'returns')?.permissions || [])} />,
     suppliers: <Suppliers {...commonProps} permissions={new Set(session?.menu?.find(item => item.key === 'suppliers')?.permissions || [])} />,
     customers: <Customers {...commonProps} permissions={new Set(session?.menu?.find(item => item.key === 'customers')?.permissions || [])} />,
     schemes: <Schemes {...commonProps} />,

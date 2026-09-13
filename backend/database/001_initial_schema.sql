@@ -314,6 +314,14 @@ BEGIN
     CREATE INDEX IX_SaleItems_Medicine ON dbo.SaleItems(MedicineId, SaleId) WHERE IsDeleted=0;
 END;
 
+IF OBJECT_ID('dbo.SaleReturns','U') IS NULL
+BEGIN
+ CREATE TABLE dbo.SaleReturns(Id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_SaleReturns PRIMARY KEY, SaleId BIGINT NOT NULL, InvoiceNumber NVARCHAR(40) NOT NULL, CustomerName NVARCHAR(160) NOT NULL, Reason NVARCHAR(300) NOT NULL, Amount DECIMAL(18,2) NOT NULL, Status NVARCHAR(20) NOT NULL CONSTRAINT DF_SaleReturns_Status DEFAULT('Completed'), IsDeleted BIT NOT NULL CONSTRAINT DF_SaleReturns_IsDeleted DEFAULT(0), CreatedByUserId BIGINT NOT NULL, CreatedAtUtc DATETIME2 NOT NULL CONSTRAINT DF_SaleReturns_Created DEFAULT(SYSUTCDATETIME()), CONSTRAINT FK_SaleReturns_Sales FOREIGN KEY(SaleId) REFERENCES dbo.Sales(Id), CONSTRAINT FK_SaleReturns_Users FOREIGN KEY(CreatedByUserId) REFERENCES dbo.Users(Id), CONSTRAINT CK_SaleReturns_Amount CHECK(Amount>=0));
+ CREATE INDEX IX_SaleReturns_Date ON dbo.SaleReturns(CreatedAtUtc DESC,Id DESC) WHERE IsDeleted=0;
+ CREATE TABLE dbo.SaleReturnItems(Id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_SaleReturnItems PRIMARY KEY, ReturnId BIGINT NOT NULL, SaleItemId BIGINT NOT NULL, MedicineId BIGINT NOT NULL, MedicineName NVARCHAR(160) NOT NULL, Quantity INT NOT NULL, LineTotal DECIMAL(18,2) NOT NULL, CONSTRAINT FK_SaleReturnItems_Return FOREIGN KEY(ReturnId) REFERENCES dbo.SaleReturns(Id), CONSTRAINT FK_SaleReturnItems_Item FOREIGN KEY(SaleItemId) REFERENCES dbo.SaleItems(Id), CONSTRAINT CK_SaleReturnItems_Values CHECK(Quantity>0 AND LineTotal>=0));
+ CREATE INDEX IX_SaleReturnItems_SaleItem ON dbo.SaleReturnItems(SaleItemId,ReturnId);
+END;
+
 MERGE dbo.Roles AS target
 USING (VALUES
     ('Administrator', 1), ('Billing Operator', 1),

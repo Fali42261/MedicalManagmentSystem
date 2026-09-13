@@ -88,6 +88,8 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(PermissionPolicies.CustomersAdd, policy => policy.AddRequirements(new PermissionRequirement("customers", "Add")));
     options.AddPolicy(PermissionPolicies.CustomersEdit, policy => policy.AddRequirements(new PermissionRequirement("customers", "Edit")));
     options.AddPolicy(PermissionPolicies.CustomersDelete, policy => policy.AddRequirements(new PermissionRequirement("customers", "Delete")));
+    options.AddPolicy(PermissionPolicies.ReturnsView, policy => policy.AddRequirements(new PermissionRequirement("returns", "View")));
+    options.AddPolicy(PermissionPolicies.ReturnsAdd, policy => policy.AddRequirements(new PermissionRequirement("returns", "Add")));
 });
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
@@ -114,6 +116,7 @@ builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
 builder.Services.AddScoped<IPurchaseRepository, PurchaseRepository>();
 builder.Services.AddScoped<ISaleRepository, SaleRepository>();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+builder.Services.AddScoped<IReturnRepository, ReturnRepository>();
 builder.Services.AddScoped<INavigationService, NavigationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IMedicineService, MedicineService>();
@@ -123,6 +126,7 @@ builder.Services.AddScoped<ISupplierService, SupplierService>();
 builder.Services.AddScoped<IPurchaseService, PurchaseService>();
 builder.Services.AddScoped<ISaleService, SaleService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
+builder.Services.AddScoped<IReturnService, ReturnService>();
 builder.Services.AddScoped<IPasswordHasher<UserRecord>, PasswordHasher<UserRecord>>();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 builder.Services.AddHostedService<BootstrapAdminService>();
