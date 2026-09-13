@@ -4,6 +4,7 @@ import Icon from '../../components/Icon'
 import TablePagination from '../../components/TablePagination'
 import { usePharmacyData } from '../../hooks/usePharmacyData'
 import { useTableControls } from '../../hooks/useTableControls'
+import { MASTER_TABS } from '../../services/medicineMaster.api'
 import { money, sortable, valuesFromForm } from './pageUtils'
 import { Badge, Button, DataTable, EmptyTable, MedicineModal, PageHeader, Panel, SalesChart, SearchBox } from './shared'
 
@@ -54,7 +55,7 @@ export function Dashboard({ navigate }) {
   )
 }
 export function Medicines({ showToast, permissions }) {
-  const { data: { medicines }, mutations } = usePharmacyData()
+  const { data: { medicines, masterData }, mutations } = usePharmacyData()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('All status')
   const [showModal, setShowModal] = useState(false)
@@ -77,11 +78,13 @@ export function Medicines({ showToast, permissions }) {
         <TablePagination page={table.page} totalPages={table.totalPages} totalRows={table.totalRows} pageSize={6} onPageChange={table.setPage}/>
       </Panel>
       {showModal && <MedicineModal
+        masterData={masterData}
         onClose={() => setShowModal(false)}
         onSave={async (payload) => { await mutations.createMedicine(payload); setShowModal(false); showToast('Medicine saved successfully') }}
       />}
       {editMedicine && <MedicineModal
         item={editMedicine}
+        masterData={masterData}
         onClose={() => setEditMedicine(null)}
         onSave={async (payload) => { await mutations.updateMedicine(editMedicine.id, payload); setEditMedicine(null); showToast('Medicine updated successfully') }}
       />}
@@ -127,23 +130,46 @@ export function Inventory({ showToast, permissions }) {
     </>
   )
 }
-export function Masters({ showToast }) {
-  const { data: { masterData } } = usePharmacyData()
+export function Masters({ showToast, permissions }) {
+  const { data: { masterData }, mutations } = usePharmacyData()
   const [tab, setTab] = useState('Categories')
   const [adding, setAdding] = useState(false)
   const [search, setSearch] = useState('')
   const [editing, setEditing] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [error, setError] = useState('')
+  const rows = masterData[tab] || []
+  const visible = rows.filter(row => `${row.code} ${row.name} ${row.description}`.toLowerCase().includes(search.toLowerCase()))
+  const submit = async (event) => {
+    event.preventDefault()
+    setError('')
+    setSaving(true)
+    const values = valuesFromForm(event.currentTarget)
+    try {
+      if (editing) await mutations.updateMedicineMaster(editing.id, editing.type, { name: values.name, description: values.description, isActive: values.isActive === 'true', rowVersion: editing.rowVersion })
+      else await mutations.createMedicineMaster({ type: MASTER_TABS[tab], name: values.name, description: values.description })
+      setAdding(false)
+      setEditing(null)
+      showToast(`${tab} master ${editing ? 'updated' : 'saved'}`)
+    } catch (requestError) { setError(requestError.message) } finally { setSaving(false) }
+  }
   return (
     <>
-      <PageHeader title="Medicine Masters" description="Maintain categories, manufacturers and salt/generic names."><Button icon="plus" onClick={() => setAdding(!adding)}>Add {tab === 'Salt / Generic' ? 'salt' : tab.slice(0, -1).toLowerCase()}</Button></PageHeader>
-      {(adding || editing) && <Panel title={editing ? `Edit ${tab.toLowerCase()}` : `New ${tab === 'Salt / Generic' ? 'salt / generic' : tab.slice(0, -1).toLowerCase()}`} className="inline-form-panel"><form className="master-form" onSubmit={(e) => { e.preventDefault(); setAdding(false); setEditing(null); showToast(`${tab} master ${editing ? 'updated' : 'saved'}`) }}><label>Name<input required defaultValue={editing?.[1]} placeholder={`Enter ${tab.toLowerCase()} name`}/></label><label>Description<input defaultValue={editing?.[2]} placeholder="Optional description"/></label><Button type="submit">Save</Button></form></Panel>}
-      <Panel title="Master directory" action={<Badge>{masterData[tab].length} records</Badge>}>
-        <div className="tabs">{Object.keys(masterData).map((item) => <button key={item} className={tab === item ? 'active' : ''} onClick={() => setTab(item)}>{item}</button>)}</div>
+      <PageHeader title="Medicine Masters" description="Maintain categories, manufacturers and salt/generic names.">{permissions.has('Add') && <Button icon="plus" onClick={() => { setEditing(null); setAdding(!adding); setError('') }}>Add {tab === 'Salt / Generic' ? 'salt' : tab.slice(0, -1).toLowerCase()}</Button>}</PageHeader>
+      {(adding || editing) && <Panel title={editing ? `Edit ${tab.toLowerCase()}` : `New ${tab === 'Salt / Generic' ? 'salt / generic' : tab.slice(0, -1).toLowerCase()}`} className="inline-form-panel"><form className="master-form" onSubmit={submit}><label>Name<input name="name" required minLength="2" defaultValue={editing?.name} placeholder={`Enter ${tab.toLowerCase()} name`}/></label><label>Description<input name="description" maxLength="300" defaultValue={editing?.description} placeholder="Optional description"/></label>{editing && <label>Status<select name="isActive" defaultValue={String(editing.isActive)}><option value="true">Active</option><option value="false">Inactive</option></select></label>}<Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>{error && <p className="form-error span-2" role="alert">{error}</p>}</form></Panel>}
+      <Panel title="Master directory" action={<Badge>{rows.length} records</Badge>}>
+        <div className="tabs">{Object.keys(masterData).map((item) => <button key={item} className={tab === item ? 'active' : ''} onClick={() => { setTab(item); setAdding(false); setEditing(null); setError('') }}>{item}</button>)}</div>
         <div className="toolbar"><SearchBox value={search} onChange={setSearch} placeholder={`Search ${tab.toLowerCase()}...`}/><Button variant="secondary" icon="download" onClick={() => showToast(`${tab} master exported`)}>Export</Button></div>
         <DataTable headers={['Code','Name','Usage','Status','Last updated','']}>
-          {masterData[tab].filter(row => row.join(' ').toLowerCase().includes(search.toLowerCase())).map(([code,name,usage]) => <tr key={code}><td><b className="primary-text">{code}</b></td><td><b>{name}</b></td><td>{usage}</td><td><Badge tone="success">Active</Badge></td><td>12 Sep 2026</td><td><button className="icon-button" aria-label={`Edit ${name}`} onClick={() => { setAdding(false); setEditing([code,name,usage]) }}><Icon name="edit" size={16}/></button></td></tr>)}
+          {visible.map(row => <tr key={row.id}><td><b className="primary-text">{row.code}</b></td><td><b>{row.name}</b><small>{row.description}</small></td><td>{row.usageCount} medicines</td><td><Badge tone={row.isActive ? 'success' : 'neutral'}>{row.isActive ? 'Active' : 'Inactive'}</Badge></td><td>{new Date(row.updatedAtUtc).toLocaleDateString('en-IN')}</td><td><div className="row-actions">{permissions.has('Edit') && <button className="icon-button" aria-label={`Edit ${row.name}`} onClick={() => { setAdding(false); setEditing(row); setError('') }}><Icon name="edit" size={16}/></button>}{permissions.has('Delete') && <button className="icon-button danger-text" aria-label={`Delete ${row.name}`} onClick={() => setDeleteTarget(row)}><Icon name="trash" size={16}/></button>}</div></td></tr>)}
+          {!visible.length && <EmptyTable colSpan={6} message={`No ${tab.toLowerCase()} found.`}/>}
         </DataTable>
       </Panel>
+      {deleteTarget && (
+        <ConfirmDialog title="Delete master?" message={`${deleteTarget.name} will be removed if it is not used by any medicine.`} busy={deleting} onCancel={() => setDeleteTarget(null)} onConfirm={async () => { setDeleting(true); try { await mutations.deleteMedicineMaster(deleteTarget.id, deleteTarget.type); setDeleteTarget(null); showToast('Master deleted successfully') } catch (requestError) { showToast(requestError.message) } finally { setDeleting(false) } }}/>
+      )}
     </>
   )
 }

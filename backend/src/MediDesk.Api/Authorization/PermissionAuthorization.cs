@@ -12,6 +12,10 @@ public static class PermissionPolicies
     public const string MedicinesDelete = "medicines:delete";
     public const string InventoryView = "inventory:view";
     public const string InventoryEdit = "inventory:edit";
+    public const string MastersView = "masters:view";
+    public const string MastersAdd = "masters:add";
+    public const string MastersEdit = "masters:edit";
+    public const string MastersDelete = "masters:delete";
 }
 
 public sealed record PermissionRequirement(string ModuleKey, string Permission) : IAuthorizationRequirement;

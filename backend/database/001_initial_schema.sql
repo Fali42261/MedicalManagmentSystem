@@ -116,6 +116,28 @@ BEGIN
     CREATE INDEX IX_InventoryMovements_MedicineDate ON dbo.InventoryMovements(MedicineId, CreatedAtUtc DESC);
 END;
 
+IF OBJECT_ID('dbo.MedicineMasters', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.MedicineMasters (
+        Id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_MedicineMasters PRIMARY KEY,
+        MasterType NVARCHAR(30) NOT NULL,
+        Name NVARCHAR(160) NOT NULL,
+        Description NVARCHAR(300) NULL,
+        IsActive BIT NOT NULL CONSTRAINT DF_MedicineMasters_IsActive DEFAULT (1),
+        IsDeleted BIT NOT NULL CONSTRAINT DF_MedicineMasters_IsDeleted DEFAULT (0),
+        CreatedByUserId BIGINT NOT NULL,
+        CreatedAtUtc DATETIME2 NOT NULL CONSTRAINT DF_MedicineMasters_Created DEFAULT (SYSUTCDATETIME()),
+        UpdatedByUserId BIGINT NULL,
+        UpdatedAtUtc DATETIME2 NULL,
+        RowVersion ROWVERSION NOT NULL,
+        CONSTRAINT FK_MedicineMasters_CreatedBy FOREIGN KEY (CreatedByUserId) REFERENCES dbo.Users(Id),
+        CONSTRAINT FK_MedicineMasters_UpdatedBy FOREIGN KEY (UpdatedByUserId) REFERENCES dbo.Users(Id),
+        CONSTRAINT CK_MedicineMasters_Type CHECK (MasterType IN ('Category','Manufacturer','Generic'))
+    );
+    CREATE UNIQUE INDEX UX_MedicineMasters_TypeName_Active ON dbo.MedicineMasters(MasterType, Name) WHERE IsDeleted=0;
+    CREATE INDEX IX_MedicineMasters_TypeActive ON dbo.MedicineMasters(MasterType, IsActive) INCLUDE (Name) WHERE IsDeleted=0;
+END;
+
 MERGE dbo.Roles AS target
 USING (VALUES
     ('Administrator', 1), ('Billing Operator', 1),

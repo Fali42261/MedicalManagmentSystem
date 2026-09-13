@@ -72,3 +72,14 @@ The bootstrap credentials only create the first administrator when that email do
 - Negative stock, invalid adjustment types and no-change corrections are rejected.
 - Opening stock creates its first ledger entry when a medicine is created.
 - Inventory View/Edit permissions are checked against the database for every request.
+
+### Step 3 — Medicine Masters
+
+- `GET /api/medicine-masters?type=Category|Manufacturer|Generic` lists active and inactive master records with medicine usage counts.
+- `POST /api/medicine-masters` creates a category, manufacturer or generic/salt master.
+- `PUT /api/medicine-masters/{id}` updates a master with row-version concurrency protection.
+- `DELETE /api/medicine-masters/{id}` performs an audited soft delete.
+- Duplicate names are rejected within each master type.
+- Masters already used by medicines cannot be renamed or deleted, preserving medicine history.
+- The medicine form loads its category, manufacturer and generic dropdowns from these API records.
+- Every endpoint checks the current user's database permission for View, Add, Edit or Delete.

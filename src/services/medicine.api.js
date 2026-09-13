@@ -1,3 +1,4 @@
+import { BACKEND_API_ENDPOINTS } from '../constants/api.constants'
 import { backendClient } from './backendClient'
 
 export const mapMedicineFromApi = (medicine) => ({
@@ -24,8 +25,8 @@ const toApi = (medicine, includeVersion = false) => ({
 })
 
 export const medicineApi = Object.freeze({
-  getAll: () => backendClient.get('/medicines', { page: 1, pageSize: 200, sortBy: 'name' }).then(response => response.items.map(mapMedicineFromApi)),
-  create: (payload) => backendClient.post('/medicines', toApi(payload)).then(mapMedicineFromApi),
-  update: (id, payload) => backendClient.put(`/medicines/${id}`, toApi(payload, true)).then(mapMedicineFromApi),
-  delete: (id) => backendClient.delete(`/medicines/${id}`),
+  getAll: () => backendClient.get(BACKEND_API_ENDPOINTS.MEDICINES, { page: 1, pageSize: 200, sortBy: 'name' }).then(response => response.items.map(mapMedicineFromApi)),
+  create: (payload) => backendClient.post(BACKEND_API_ENDPOINTS.MEDICINES, toApi(payload)).then(mapMedicineFromApi),
+  update: (id, payload) => backendClient.put(BACKEND_API_ENDPOINTS.MEDICINE_BY_ID(id), toApi(payload, true)).then(mapMedicineFromApi),
+  delete: (id) => backendClient.delete(BACKEND_API_ENDPOINTS.MEDICINE_BY_ID(id)),
 })

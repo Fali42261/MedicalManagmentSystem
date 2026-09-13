@@ -90,7 +90,7 @@ function AppContent() {
   const pages = {
     dashboard: <Dashboard {...commonProps} />,
     medicines: <Medicines {...commonProps} permissions={new Set(session?.menu?.find(item => item.key === 'medicines')?.permissions || [])} />,
-    masters: <Masters {...commonProps} />,
+    masters: <Masters {...commonProps} permissions={new Set(session?.menu?.find(item => item.key === 'masters')?.permissions || [])} />,
     inventory: <Inventory {...commonProps} permissions={new Set(session?.menu?.find(item => item.key === 'inventory')?.permissions || [])} />,
     purchases: <Purchases {...commonProps} />,
     sales: <Sales {...commonProps} />,

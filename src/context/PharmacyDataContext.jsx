@@ -3,6 +3,7 @@ import { pharmacyApi } from '../services/pharmacy.api'
 import { authApi } from '../services/auth.api'
 import { medicineApi } from '../services/medicine.api'
 import { inventoryApi } from '../services/inventory.api'
+import { MASTER_TABS, medicineMasterApi } from '../services/medicineMaster.api'
 import { mapApiData } from '../utils/apiMappers'
 import { PharmacyDataContext } from './pharmacyData.context'
 
@@ -14,17 +15,19 @@ export function PharmacyDataProvider({ children }) {
     try {
       const session = authApi.getSession()
       const canView = (moduleKey) => session?.menu?.some(item => item.key === moduleKey && item.permissions.includes('View'))
-      const [products, users, carts, todos, medicines, inventoryMovements] = await Promise.all([
+      const [products, users, carts, todos, medicines, inventoryMovements, medicineMasters] = await Promise.all([
         pharmacyApi.getProducts(),
         pharmacyApi.getUsers(),
         pharmacyApi.getCarts(),
         pharmacyApi.getTodos(),
         canView('medicines') ? medicineApi.getAll() : Promise.resolve(null),
         canView('inventory') ? inventoryApi.getMovements() : Promise.resolve([]),
+        canView('masters') ? medicineMasterApi.getAll() : Promise.resolve(null),
       ])
       const mapped = mapApiData({ products: products.products, users: users.users, carts: carts.carts, todos: todos.todos })
       if (medicines) mapped.medicines = medicines
       mapped.inventoryMovements = inventoryMovements
+      if (medicineMasters) mapped.masterData = medicineMasters
       setState({
         loading: false,
         error: '',
@@ -68,6 +71,29 @@ export function PharmacyDataProvider({ children }) {
     return result
   }, [updateCollection])
 
+  const updateMasterCollection = useCallback((type, updater) => {
+    const tab = Object.entries(MASTER_TABS).find(([, value]) => value === type)?.[0]
+    if (!tab) return
+    setState(current => ({ ...current, data: { ...current.data, masterData: { ...current.data.masterData, [tab]: updater(current.data.masterData[tab]) } } }))
+  }, [])
+
+  const createMedicineMaster = useCallback(async (payload) => {
+    const master = await medicineMasterApi.create(payload)
+    updateMasterCollection(master.type, rows => [master, ...rows])
+    return master
+  }, [updateMasterCollection])
+
+  const updateMedicineMaster = useCallback(async (id, type, payload) => {
+    const master = await medicineMasterApi.update(id, payload)
+    updateMasterCollection(type, rows => rows.map(row => row.id === id ? master : row))
+    return master
+  }, [updateMasterCollection])
+
+  const deleteMedicineMaster = useCallback(async (id, type) => {
+    await medicineMasterApi.delete(id)
+    updateMasterCollection(type, rows => rows.filter(row => row.id !== id))
+  }, [updateMasterCollection])
+
   const createPartner = useCallback(async (type, payload) => {
     const [firstName, ...last] = payload.name.trim().split(' ')
     const created = await pharmacyApi.addPartner({ firstName, lastName: last.join(' '), phone: payload.phone, email: payload.email })
@@ -89,7 +115,7 @@ export function PharmacyDataProvider({ children }) {
     return created
   }, [updateCollection])
 
-  const mutations = useMemo(() => ({ createMedicine, updateMedicine, deleteMedicine, adjustStock, createPartner, deletePartner, createTransaction }), [createMedicine, updateMedicine, deleteMedicine, adjustStock, createPartner, deletePartner, createTransaction])
+  const mutations = useMemo(() => ({ createMedicine, updateMedicine, deleteMedicine, adjustStock, createMedicineMaster, updateMedicineMaster, deleteMedicineMaster, createPartner, deletePartner, createTransaction }), [createMedicine, updateMedicine, deleteMedicine, adjustStock, createMedicineMaster, updateMedicineMaster, deleteMedicineMaster, createPartner, deletePartner, createTransaction])
   const value = useMemo(() => ({ ...state, reload: load, api: pharmacyApi, mutations }), [state, load, mutations])
   return <PharmacyDataContext.Provider value={value}>{children}</PharmacyDataContext.Provider>
 }

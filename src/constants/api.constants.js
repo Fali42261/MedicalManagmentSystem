@@ -16,6 +16,18 @@ export const API_ENDPOINTS = Object.freeze({
   TODO_BY_ID: (id) => `/todos/${id}`,
 })
 
+export const BACKEND_API_ENDPOINTS = Object.freeze({
+  AUTH_LOGIN: '/auth/login',
+  AUTH_SIGNUP: '/auth/signup',
+  NAVIGATION_ME: '/navigation/me',
+  MEDICINES: '/medicines',
+  MEDICINE_BY_ID: (id) => `/medicines/${id}`,
+  INVENTORY_MOVEMENTS: '/inventory/movements',
+  INVENTORY_ADJUSTMENTS: '/inventory/adjustments',
+  MEDICINE_MASTERS: '/medicine-masters',
+  MEDICINE_MASTER_BY_ID: (id) => `/medicine-masters/${id}`,
+})
+
 export const API_QUERY = Object.freeze({
   DASHBOARD_LIMIT: 12,
   DIRECTORY_LIMIT: 12,

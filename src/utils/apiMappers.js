@@ -127,9 +127,9 @@ export const mapApiData = ({ products = [], users = [], carts = [], todos = [] }
   }))
 
   const masterData = {
-    Categories: [...new Set(products.map(item => item.category))].slice(0, 8).map((name, index) => [`CAT-${String(index + 1).padStart(3, '0')}`, name, `${products.filter(item => item.category === name).length} products`]),
-    Manufacturers: [...new Set(products.map(item => item.brand).filter(Boolean))].slice(0, 8).map((name, index) => [`MFG-${String(index + 1).padStart(3, '0')}`, name, 'API catalogue']),
-    'Salt / Generic': medicines.slice(0, 8).map((item, index) => [`SLT-${String(index + 1).padStart(3, '0')}`, item.generic, item.category]),
+    Categories: [...new Set(products.map(item => item.category))].slice(0, 8).map((name, index) => ({ id: `CAT-${index + 1}`, code: `CAT-${String(index + 1).padStart(3, '0')}`, type: 'Category', name, description: 'Imported catalogue category', usageCount: products.filter(item => item.category === name).length, isActive: true, updatedAtUtc: new Date().toISOString(), rowVersion: '' })),
+    Manufacturers: [...new Set(products.map(item => item.brand).filter(Boolean))].slice(0, 8).map((name, index) => ({ id: `MFG-${index + 1}`, code: `MFG-${String(index + 1).padStart(3, '0')}`, type: 'Manufacturer', name, description: 'Imported catalogue manufacturer', usageCount: 0, isActive: true, updatedAtUtc: new Date().toISOString(), rowVersion: '' })),
+    'Salt / Generic': medicines.slice(0, 8).map((item, index) => ({ id: `GEN-${index + 1}`, code: `GEN-${String(index + 1).padStart(3, '0')}`, type: 'Generic', name: item.generic, description: item.category, usageCount: 1, isActive: true, updatedAtUtc: new Date().toISOString(), rowVersion: '' })),
   }
 
   const reportRows = medicines.slice(0, 5).map((item, index) => ({ name: item.name, sold: 40 + index * 23, sales: item.sale * (40 + index * 23), profit: (item.sale - item.purchase) * (40 + index * 23) }))

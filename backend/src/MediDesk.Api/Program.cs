@@ -70,6 +70,10 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(PermissionPolicies.MedicinesDelete, policy => policy.AddRequirements(new PermissionRequirement("medicines", "Delete")));
     options.AddPolicy(PermissionPolicies.InventoryView, policy => policy.AddRequirements(new PermissionRequirement("inventory", "View")));
     options.AddPolicy(PermissionPolicies.InventoryEdit, policy => policy.AddRequirements(new PermissionRequirement("inventory", "Edit")));
+    options.AddPolicy(PermissionPolicies.MastersView, policy => policy.AddRequirements(new PermissionRequirement("masters", "View")));
+    options.AddPolicy(PermissionPolicies.MastersAdd, policy => policy.AddRequirements(new PermissionRequirement("masters", "Add")));
+    options.AddPolicy(PermissionPolicies.MastersEdit, policy => policy.AddRequirements(new PermissionRequirement("masters", "Edit")));
+    options.AddPolicy(PermissionPolicies.MastersDelete, policy => policy.AddRequirements(new PermissionRequirement("masters", "Delete")));
 });
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
@@ -91,10 +95,12 @@ builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IPermissionRepository, PermissionRepository>();
 builder.Services.AddScoped<IMedicineRepository, MedicineRepository>();
 builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
+builder.Services.AddScoped<IMedicineMasterRepository, MedicineMasterRepository>();
 builder.Services.AddScoped<INavigationService, NavigationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IMedicineService, MedicineService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
+builder.Services.AddScoped<IMedicineMasterService, MedicineMasterService>();
 builder.Services.AddScoped<IPasswordHasher<UserRecord>, PasswordHasher<UserRecord>>();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 builder.Services.AddHostedService<BootstrapAdminService>();
