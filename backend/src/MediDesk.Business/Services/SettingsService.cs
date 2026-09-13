@@ -1,0 +1,2 @@
+using MediDesk.Business.Interfaces;using MediDesk.Common.Contracts.Administration;namespace MediDesk.Business.Services;public sealed class SettingsService(ISettingsRepository r):ISettingsService{public Task<IReadOnlyCollection<AppSettingDto>>GetAsync(CancellationToken ct)=>r.GetAsync(ct);public Task<IReadOnlyCollection<AppSettingDto>>UpdateAsync(Dictionary<string,string> values,long u,CancellationToken ct)=>r.UpdateAsync(values.Where(x=>x.Key.Length<=80&&x.Value.Length<=500).ToDictionary(x=>x.Key.Trim(),x=>x.Value.Trim()),u,ct);}
+

@@ -38,6 +38,7 @@ public static class PermissionPolicies
     public const string StoresView = "stores:view"; public const string StoresAdd = "stores:add";
     public const string UsersView = "users:view"; public const string UsersEdit = "users:edit";
     public const string DataToolsView = "data-tools:view"; public const string DataToolsAdd = "data-tools:add";
+    public const string SettingsView = "settings:view"; public const string SettingsEdit = "settings:edit";
 }
 
 public sealed record PermissionRequirement(string ModuleKey, string Permission) : IAuthorizationRequirement;
