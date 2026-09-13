@@ -1,0 +1,2 @@
+using MediDesk.Common.Contracts.Catalog; using MediDesk.Common.Contracts.Finance; namespace MediDesk.Business.Interfaces; public interface ISchemeService {Task<PagedResponse<SchemeDto>> GetPageAsync(SchemeQuery q,CancellationToken ct);Task<SchemeDto> CreateAsync(CreateSchemeRequest r,long u,CancellationToken ct);Task<SchemeWriteResult> UpdateAsync(long id,UpdateSchemeRequest r,long u,CancellationToken ct);Task<bool> DeleteAsync(long id,long u,CancellationToken ct);}
+

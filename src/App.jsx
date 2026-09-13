@@ -97,7 +97,7 @@ function AppContent() {
     returns: <Returns {...commonProps} permissions={new Set(session?.menu?.find(item => item.key === 'returns')?.permissions || [])} />,
     suppliers: <Suppliers {...commonProps} permissions={new Set(session?.menu?.find(item => item.key === 'suppliers')?.permissions || [])} />,
     customers: <Customers {...commonProps} permissions={new Set(session?.menu?.find(item => item.key === 'customers')?.permissions || [])} />,
-    schemes: <Schemes {...commonProps} />,
+    schemes: <Schemes {...commonProps} permissions={new Set(session?.menu?.find(item => item.key === 'schemes')?.permissions || [])} />,
     accounts: <Accounts {...commonProps} />,
     compliance: <Compliance {...commonProps} />,
     stores: <Stores {...commonProps} />,

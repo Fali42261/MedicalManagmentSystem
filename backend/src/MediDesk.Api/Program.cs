@@ -90,6 +90,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(PermissionPolicies.CustomersDelete, policy => policy.AddRequirements(new PermissionRequirement("customers", "Delete")));
     options.AddPolicy(PermissionPolicies.ReturnsView, policy => policy.AddRequirements(new PermissionRequirement("returns", "View")));
     options.AddPolicy(PermissionPolicies.ReturnsAdd, policy => policy.AddRequirements(new PermissionRequirement("returns", "Add")));
+    options.AddPolicy(PermissionPolicies.SchemesView, policy => policy.AddRequirements(new PermissionRequirement("schemes", "View"))); options.AddPolicy(PermissionPolicies.SchemesAdd, policy => policy.AddRequirements(new PermissionRequirement("schemes", "Add"))); options.AddPolicy(PermissionPolicies.SchemesEdit, policy => policy.AddRequirements(new PermissionRequirement("schemes", "Edit"))); options.AddPolicy(PermissionPolicies.SchemesDelete, policy => policy.AddRequirements(new PermissionRequirement("schemes", "Delete")));
 });
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
@@ -117,6 +118,7 @@ builder.Services.AddScoped<IPurchaseRepository, PurchaseRepository>();
 builder.Services.AddScoped<ISaleRepository, SaleRepository>();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<IReturnRepository, ReturnRepository>();
+builder.Services.AddScoped<ISchemeRepository, SchemeRepository>();
 builder.Services.AddScoped<INavigationService, NavigationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IMedicineService, MedicineService>();
@@ -127,6 +129,7 @@ builder.Services.AddScoped<IPurchaseService, PurchaseService>();
 builder.Services.AddScoped<ISaleService, SaleService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IReturnService, ReturnService>();
+builder.Services.AddScoped<ISchemeService, SchemeService>();
 builder.Services.AddScoped<IPasswordHasher<UserRecord>, PasswordHasher<UserRecord>>();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 builder.Services.AddHostedService<BootstrapAdminService>();

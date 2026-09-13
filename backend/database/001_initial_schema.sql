@@ -322,6 +322,12 @@ BEGIN
  CREATE INDEX IX_SaleReturnItems_SaleItem ON dbo.SaleReturnItems(SaleItemId,ReturnId);
 END;
 
+IF OBJECT_ID('dbo.Schemes','U') IS NULL
+BEGIN
+ CREATE TABLE dbo.Schemes(Id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Schemes PRIMARY KEY,Name NVARCHAR(160) NOT NULL,AppliesTo NVARCHAR(80) NOT NULL,SchemeType NVARCHAR(30) NOT NULL,Value DECIMAL(18,2) NOT NULL,ValidFrom DATE NOT NULL,ValidUntil DATE NOT NULL,IsActive BIT NOT NULL CONSTRAINT DF_Schemes_IsActive DEFAULT(1),IsDeleted BIT NOT NULL CONSTRAINT DF_Schemes_IsDeleted DEFAULT(0),CreatedByUserId BIGINT NOT NULL,CreatedAtUtc DATETIME2 NOT NULL CONSTRAINT DF_Schemes_Created DEFAULT(SYSUTCDATETIME()),UpdatedByUserId BIGINT NULL,UpdatedAtUtc DATETIME2 NULL,RowVersion ROWVERSION NOT NULL,CONSTRAINT FK_Schemes_CreatedBy FOREIGN KEY(CreatedByUserId) REFERENCES dbo.Users(Id),CONSTRAINT CK_Schemes_Dates CHECK(ValidUntil>=ValidFrom AND Value>=0));
+ CREATE INDEX IX_Schemes_ActiveDates ON dbo.Schemes(IsActive,ValidFrom,ValidUntil) WHERE IsDeleted=0;
+END;
+
 MERGE dbo.Roles AS target
 USING (VALUES
     ('Administrator', 1), ('Billing Operator', 1),

@@ -32,6 +32,7 @@ public static class PermissionPolicies
     public const string CustomersDelete = "customers:delete";
     public const string ReturnsView = "returns:view";
     public const string ReturnsAdd = "returns:add";
+    public const string SchemesView = "schemes:view"; public const string SchemesAdd = "schemes:add"; public const string SchemesEdit = "schemes:edit"; public const string SchemesDelete = "schemes:delete";
 }
 
 public sealed record PermissionRequirement(string ModuleKey, string Permission) : IAuthorizationRequirement;
