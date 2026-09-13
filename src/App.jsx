@@ -103,7 +103,7 @@ function AppContent() {
     stores: <Stores {...commonProps} permissions={new Set(session?.menu?.find(item => item.key === 'stores')?.permissions || [])} />,
     users: <UsersRoles {...commonProps} permissions={new Set(session?.menu?.find(item => item.key === 'users')?.permissions || [])} />,
     reports: <Reports {...commonProps} />,
-    'data-tools': <DataTools {...commonProps} />,
+    'data-tools': <DataTools {...commonProps} permissions={new Set(session?.menu?.find(item => item.key === 'data-tools')?.permissions || [])} />,
     settings: <Settings {...commonProps} />,
   }
 

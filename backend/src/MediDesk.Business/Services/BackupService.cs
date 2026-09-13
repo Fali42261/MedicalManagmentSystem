@@ -1,0 +1,2 @@
+using MediDesk.Business.Interfaces;using MediDesk.Common.Contracts.Administration;using MediDesk.Common.Contracts.Catalog;namespace MediDesk.Business.Services;public sealed class BackupService(IBackupRepository r):IBackupService{public Task<PagedResponse<BackupDto>>GetPageAsync(BackupQuery q,CancellationToken ct)=>r.GetPageAsync(q with{Page=Math.Max(1,q.Page),PageSize=Math.Clamp(q.PageSize,1,200)},ct);public Task<BackupDto>CreateAsync(string type,long u,CancellationToken ct)=>r.CreateAsync(string.IsNullOrWhiteSpace(type)?"Full":type.Trim(),u,ct);}
+
