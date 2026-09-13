@@ -4,7 +4,7 @@ import Icon from '../../components/Icon'
 import TablePagination from '../../components/TablePagination'
 import { usePharmacyData } from '../../hooks/usePharmacyData'
 import { useTableControls } from '../../hooks/useTableControls'
-import { money, sortable } from './pageUtils'
+import { money, sortable, valuesFromForm } from './pageUtils'
 import { Badge, Button, DataTable, EmptyTable, MedicineModal, PageHeader, Panel, SalesChart, SearchBox } from './shared'
 
 export function Dashboard({ navigate }) {
@@ -95,10 +95,12 @@ export function Medicines({ showToast, permissions }) {
     </>
   )
 }
-export function Inventory({ showToast }) {
-  const { data: { medicines } } = usePharmacyData()
+export function Inventory({ showToast, permissions }) {
+  const { data: { medicines, inventoryMovements }, mutations } = usePharmacyData()
   const [view, setView] = useState('All stock')
   const [adjusting, setAdjusting] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
   const filtered = view === 'All stock' ? medicines : medicines.filter((item) => view === 'Low stock' ? item.stock < item.minStock : item.status === 'Expiring')
   const stockValue = medicines.reduce((sum, item) => sum + item.stock * item.purchase, 0)
   const totalUnits = medicines.reduce((sum, item) => sum + item.stock, 0)
@@ -106,13 +108,20 @@ export function Inventory({ showToast }) {
   const nearExpiry = medicines.filter(item => item.status === 'Expiring').length
   return (
     <>
-      <PageHeader title="Inventory" description="Track batch-wise stock, expiry and reorder levels."><Button variant="secondary" icon="download" onClick={() => showToast('Stock register exported')}>Export stock</Button><Button icon="edit" onClick={() => setAdjusting(!adjusting)}>Stock adjustment</Button></PageHeader>
-      {adjusting && <Panel title="Record stock adjustment" className="inline-form-panel"><form className="workflow-form" onSubmit={(e) => { e.preventDefault(); setAdjusting(false); showToast('Stock adjustment recorded') }}><label>Medicine<select>{medicines.map((item) => <option key={item.id}>{item.name} · {item.batch}</option>)}</select></label><label>Adjustment<select><option>Add stock</option><option>Remove stock</option><option>Opening correction</option></select></label><label>Quantity<input required min="1" type="number" placeholder="0"/></label><label>Reason<input required placeholder="Damage, count correction..."/></label><Button type="submit" icon="check">Save adjustment</Button></form></Panel>}
+      <PageHeader title="Inventory" description="Track batch-wise stock, expiry and reorder levels."><Button variant="secondary" icon="download" onClick={() => showToast('Stock register exported')}>Export stock</Button>{permissions.has('Edit') && <Button icon="edit" onClick={() => { setAdjusting(!adjusting); setError('') }}>Stock adjustment</Button>}</PageHeader>
+      {adjusting && <Panel title="Record stock adjustment" className="inline-form-panel"><form className="workflow-form workflow-form--wide" onSubmit={async (event) => { event.preventDefault(); setError(''); setSaving(true); const values = valuesFromForm(event.currentTarget); try { await mutations.adjustStock({ medicineId: Number(values.medicineId), adjustmentType: values.adjustmentType, quantity: Number(values.quantity), reason: values.reason, referenceNumber: values.referenceNumber || null }); setAdjusting(false); showToast('Stock adjustment recorded') } catch (requestError) { setError(requestError.message) } finally { setSaving(false) } }}><label>Medicine<select name="medicineId" required>{medicines.map((item) => <option value={item.id} key={item.id}>{item.name} · {item.batch}</option>)}</select></label><label>Adjustment<select name="adjustmentType"><option>Add stock</option><option>Remove stock</option><option>Opening correction</option></select></label><label>Quantity<input name="quantity" required min="1" type="number" placeholder="0"/></label><label>Reason<input name="reason" required minLength="3" placeholder="Damage, count correction..."/></label><label>Reference<input name="referenceNumber" placeholder="Optional reference"/></label><Button type="submit" icon="check" disabled={saving || !medicines.length}>{saving ? 'Saving…' : 'Save adjustment'}</Button>{error && <p className="form-error span-2" role="alert">{error}</p>}</form></Panel>}
       <div className="mini-stats"><div><Icon name="box"/><span>Stock value<b>{money(stockValue)}</b></span></div><div><Icon name="pill"/><span>Total units<b>{totalUnits.toLocaleString('en-IN')}</b></span></div><div><Icon name="alert"/><span>Low stock<b className="danger-text">{lowStock}</b></span></div><div><Icon name="return"/><span>Near expiry<b className="warning-text">{nearExpiry}</b></span></div></div>
       <Panel title="Stock register">
         <div className="tabs">{['All stock','Low stock','Near expiry'].map((tab) => <button className={view === tab ? 'active' : ''} onClick={() => setView(tab)} key={tab}>{tab}</button>)}</div>
         <DataTable headers={['Medicine','Batch','Expiry','Rack','Available','Min. level','Stock value','Health']}>
           {filtered.map((item) => { const health = Math.min(100, Math.round((item.stock / Math.max(item.minStock * 3, 1)) * 100)); return <tr key={item.id}><td><b>{item.name}</b><small>{item.generic}</small></td><td>{item.batch}</td><td>{item.expiry}</td><td>{item.rack}</td><td><b>{item.stock}</b></td><td>{item.minStock}</td><td>{money(item.stock * item.purchase)}</td><td><div className="health-cell"><span><i style={{width:`${health}%`}}></i></span><small>{health}%</small></div></td></tr> })}
+          {!filtered.length && <EmptyTable colSpan={8} message="No stock records found."/>}
+        </DataTable>
+      </Panel>
+      <Panel title="Recent stock movements" className="module-gap">
+        <DataTable headers={['Time','Medicine','Movement','Change','Stock','Reason','Created by']}>
+          {inventoryMovements.map((movement) => <tr key={movement.id}><td>{new Date(movement.createdAtUtc).toLocaleString('en-IN')}</td><td><b>{movement.medicineName}</b><small>{movement.batch}</small></td><td>{movement.movementType}</td><td><b className={movement.quantityChange > 0 ? 'positive' : 'danger-text'}>{movement.quantityChange > 0 ? '+' : ''}{movement.quantityChange}</b></td><td>{movement.previousStock} → <b>{movement.newStock}</b></td><td>{movement.reason}<small>{movement.referenceNumber}</small></td><td>{movement.createdBy}</td></tr>)}
+          {!inventoryMovements.length && <EmptyTable colSpan={7} message="No stock movements recorded yet."/>}
         </DataTable>
       </Panel>
     </>

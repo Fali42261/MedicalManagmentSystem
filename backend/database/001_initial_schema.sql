@@ -95,6 +95,27 @@ BEGIN
     CREATE INDEX IX_Medicines_Search ON dbo.Medicines(Name, GenericName) INCLUDE (Category, Stock, MinimumStock, ExpiryDate) WHERE IsDeleted=0;
 END;
 
+IF OBJECT_ID('dbo.InventoryMovements', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.InventoryMovements (
+        Id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_InventoryMovements PRIMARY KEY,
+        MedicineId BIGINT NOT NULL,
+        MovementType NVARCHAR(40) NOT NULL,
+        QuantityChange INT NOT NULL,
+        PreviousStock INT NOT NULL,
+        NewStock INT NOT NULL,
+        Reason NVARCHAR(300) NOT NULL,
+        ReferenceNumber NVARCHAR(80) NULL,
+        CreatedByUserId BIGINT NOT NULL,
+        CreatedAtUtc DATETIME2 NOT NULL CONSTRAINT DF_InventoryMovements_Created DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT FK_InventoryMovements_Medicines FOREIGN KEY (MedicineId) REFERENCES dbo.Medicines(Id),
+        CONSTRAINT FK_InventoryMovements_Users FOREIGN KEY (CreatedByUserId) REFERENCES dbo.Users(Id),
+        CONSTRAINT CK_InventoryMovements_Change CHECK (QuantityChange <> 0),
+        CONSTRAINT CK_InventoryMovements_Stock CHECK (PreviousStock >= 0 AND NewStock >= 0)
+    );
+    CREATE INDEX IX_InventoryMovements_MedicineDate ON dbo.InventoryMovements(MedicineId, CreatedAtUtc DESC);
+END;
+
 MERGE dbo.Roles AS target
 USING (VALUES
     ('Administrator', 1), ('Billing Operator', 1),

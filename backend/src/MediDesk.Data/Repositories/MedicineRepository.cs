@@ -74,14 +74,40 @@ public sealed class MedicineRepository(SqlConnectionFactory connectionFactory) :
             """;
         await using var connection = connectionFactory.Create();
         await connection.OpenAsync(cancellationToken);
-        await using var command = new SqlCommand(sql, connection);
+        await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken);
+        await using var command = new SqlCommand(sql, connection, transaction);
         AddWriteParameters(command, request.Name, request.Generic, request.Category, request.Manufacturer, request.DosageForm,
             request.Strength, request.Batch, request.ExpiryDate, request.Purchase, request.Sale, request.Stock, request.MinStock,
             request.Gst, request.Rack, userId);
         long id;
-        try { id = Convert.ToInt64(await command.ExecuteScalarAsync(cancellationToken)); }
+        try
+        {
+            id = Convert.ToInt64(await command.ExecuteScalarAsync(cancellationToken));
+            if (request.Stock > 0)
+            {
+                const string movementSql = """
+                    INSERT INTO dbo.InventoryMovements
+                        (MedicineId, MovementType, QuantityChange, PreviousStock, NewStock, Reason, CreatedByUserId)
+                    VALUES (@MedicineId, 'Opening stock', @Stock, 0, @Stock, 'Opening stock recorded with medicine', @UserId);
+                    """;
+                await using var movementCommand = new SqlCommand(movementSql, connection, transaction);
+                movementCommand.Parameters.Add("@MedicineId", SqlDbType.BigInt).Value = id;
+                movementCommand.Parameters.Add("@Stock", SqlDbType.Int).Value = request.Stock;
+                movementCommand.Parameters.Add("@UserId", SqlDbType.BigInt).Value = userId;
+                await movementCommand.ExecuteNonQueryAsync(cancellationToken);
+            }
+            await transaction.CommitAsync(cancellationToken);
+        }
         catch (SqlException exception) when (exception.Number is 2601 or 2627)
-        { throw new InvalidOperationException("An active medicine with this batch number already exists.", exception); }
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw new InvalidOperationException("An active medicine with this batch number already exists.", exception);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
         return (await GetByIdAsync(id, cancellationToken))!;
     }
 

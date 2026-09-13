@@ -27,13 +27,17 @@ public sealed class MedicineService(IMedicineRepository repository) : IMedicineS
         return repository.CreateAsync(Normalize(request), userId, cancellationToken);
     }
 
-    public Task<MedicineWriteResult> UpdateAsync(long id, UpdateMedicineRequest request, long userId, CancellationToken cancellationToken)
+    public async Task<MedicineWriteResult> UpdateAsync(long id, UpdateMedicineRequest request, long userId, CancellationToken cancellationToken)
     {
         ValidatePrices(request.Purchase, request.Sale);
         ValidateExpiry(request.ExpiryDate);
         if (!TryDecodeRowVersion(request.RowVersion))
             throw new ArgumentException("The medicine version is invalid.");
-        return repository.UpdateAsync(id, Normalize(request), userId, cancellationToken);
+        var current = await repository.GetByIdAsync(id, cancellationToken);
+        if (current is null) return new MedicineWriteResult(false, NotFound: true);
+        if (current.Stock != request.Stock)
+            throw new ArgumentException("Use Inventory stock adjustment to change available stock.");
+        return await repository.UpdateAsync(id, Normalize(request), userId, cancellationToken);
     }
 
     public Task<bool> DeleteAsync(long id, long userId, CancellationToken cancellationToken) =>

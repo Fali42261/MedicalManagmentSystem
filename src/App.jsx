@@ -91,7 +91,7 @@ function AppContent() {
     dashboard: <Dashboard {...commonProps} />,
     medicines: <Medicines {...commonProps} permissions={new Set(session?.menu?.find(item => item.key === 'medicines')?.permissions || [])} />,
     masters: <Masters {...commonProps} />,
-    inventory: <Inventory {...commonProps} />,
+    inventory: <Inventory {...commonProps} permissions={new Set(session?.menu?.find(item => item.key === 'inventory')?.permissions || [])} />,
     purchases: <Purchases {...commonProps} />,
     sales: <Sales {...commonProps} />,
     returns: <Returns {...commonProps} />,

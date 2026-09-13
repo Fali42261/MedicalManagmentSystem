@@ -63,3 +63,12 @@ The bootstrap credentials only create the first administrator when that email do
 - `PUT /api/medicines/{id}` updates with row-version concurrency protection.
 - `DELETE /api/medicines/{id}` performs an audited soft delete.
 - Every endpoint checks the current user's database permission for View, Add, Edit or Delete.
+
+### Step 2 — Inventory
+
+- `GET /api/inventory/movements` returns the latest immutable stock ledger entries.
+- `POST /api/inventory/adjustments` performs Add, Remove or Opening Correction operations.
+- Medicine stock update and movement creation run inside one serializable SQL transaction.
+- Negative stock, invalid adjustment types and no-change corrections are rejected.
+- Opening stock creates its first ledger entry when a medicine is created.
+- Inventory View/Edit permissions are checked against the database for every request.

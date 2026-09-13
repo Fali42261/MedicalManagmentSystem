@@ -68,6 +68,8 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(PermissionPolicies.MedicinesAdd, policy => policy.AddRequirements(new PermissionRequirement("medicines", "Add")));
     options.AddPolicy(PermissionPolicies.MedicinesEdit, policy => policy.AddRequirements(new PermissionRequirement("medicines", "Edit")));
     options.AddPolicy(PermissionPolicies.MedicinesDelete, policy => policy.AddRequirements(new PermissionRequirement("medicines", "Delete")));
+    options.AddPolicy(PermissionPolicies.InventoryView, policy => policy.AddRequirements(new PermissionRequirement("inventory", "View")));
+    options.AddPolicy(PermissionPolicies.InventoryEdit, policy => policy.AddRequirements(new PermissionRequirement("inventory", "Edit")));
 });
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
@@ -88,9 +90,11 @@ builder.Services.AddSingleton(new SqlConnectionFactory(connectionString));
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IPermissionRepository, PermissionRepository>();
 builder.Services.AddScoped<IMedicineRepository, MedicineRepository>();
+builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
 builder.Services.AddScoped<INavigationService, NavigationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IMedicineService, MedicineService>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IPasswordHasher<UserRecord>, PasswordHasher<UserRecord>>();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 builder.Services.AddHostedService<BootstrapAdminService>();

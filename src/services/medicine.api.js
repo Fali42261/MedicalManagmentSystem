@@ -1,6 +1,6 @@
 import { backendClient } from './backendClient'
 
-const fromApi = (medicine) => ({
+export const mapMedicineFromApi = (medicine) => ({
   ...medicine,
   expiry: medicine.expiryDate?.slice(0, 7) || '',
 })
@@ -24,8 +24,8 @@ const toApi = (medicine, includeVersion = false) => ({
 })
 
 export const medicineApi = Object.freeze({
-  getAll: () => backendClient.get('/medicines', { page: 1, pageSize: 200, sortBy: 'name' }).then(response => response.items.map(fromApi)),
-  create: (payload) => backendClient.post('/medicines', toApi(payload)).then(fromApi),
-  update: (id, payload) => backendClient.put(`/medicines/${id}`, toApi(payload, true)).then(fromApi),
+  getAll: () => backendClient.get('/medicines', { page: 1, pageSize: 200, sortBy: 'name' }).then(response => response.items.map(mapMedicineFromApi)),
+  create: (payload) => backendClient.post('/medicines', toApi(payload)).then(mapMedicineFromApi),
+  update: (id, payload) => backendClient.put(`/medicines/${id}`, toApi(payload, true)).then(mapMedicineFromApi),
   delete: (id) => backendClient.delete(`/medicines/${id}`),
 })
