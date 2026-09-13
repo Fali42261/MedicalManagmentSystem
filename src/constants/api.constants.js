@@ -28,6 +28,8 @@ export const BACKEND_API_ENDPOINTS = Object.freeze({
   MEDICINE_MASTER_BY_ID: (id) => `/medicine-masters/${id}`,
   SUPPLIERS: '/suppliers',
   SUPPLIER_BY_ID: (id) => `/suppliers/${id}`,
+  PURCHASES: '/purchases',
+  PURCHASE_BY_ID: (id) => `/purchases/${id}`,
 })
 
 export const API_QUERY = Object.freeze({

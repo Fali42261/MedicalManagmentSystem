@@ -78,6 +78,9 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(PermissionPolicies.SuppliersAdd, policy => policy.AddRequirements(new PermissionRequirement("suppliers", "Add")));
     options.AddPolicy(PermissionPolicies.SuppliersEdit, policy => policy.AddRequirements(new PermissionRequirement("suppliers", "Edit")));
     options.AddPolicy(PermissionPolicies.SuppliersDelete, policy => policy.AddRequirements(new PermissionRequirement("suppliers", "Delete")));
+    options.AddPolicy(PermissionPolicies.PurchasesView, policy => policy.AddRequirements(new PermissionRequirement("purchases", "View")));
+    options.AddPolicy(PermissionPolicies.PurchasesAdd, policy => policy.AddRequirements(new PermissionRequirement("purchases", "Add")));
+    options.AddPolicy(PermissionPolicies.PurchasesDelete, policy => policy.AddRequirements(new PermissionRequirement("purchases", "Delete")));
 });
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
@@ -101,12 +104,14 @@ builder.Services.AddScoped<IMedicineRepository, MedicineRepository>();
 builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
 builder.Services.AddScoped<IMedicineMasterRepository, MedicineMasterRepository>();
 builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
+builder.Services.AddScoped<IPurchaseRepository, PurchaseRepository>();
 builder.Services.AddScoped<INavigationService, NavigationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IMedicineService, MedicineService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IMedicineMasterService, MedicineMasterService>();
 builder.Services.AddScoped<ISupplierService, SupplierService>();
+builder.Services.AddScoped<IPurchaseService, PurchaseService>();
 builder.Services.AddScoped<IPasswordHasher<UserRecord>, PasswordHasher<UserRecord>>();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 builder.Services.AddHostedService<BootstrapAdminService>();

@@ -169,6 +169,68 @@ BEGIN
     CREATE INDEX IX_Suppliers_Search ON dbo.Suppliers(BusinessName, ContactPerson, City) INCLUDE (Phone, OutstandingBalance, IsActive) WHERE IsDeleted=0;
 END;
 
+IF OBJECT_ID('dbo.Purchases', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Purchases (
+        Id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Purchases PRIMARY KEY,
+        SupplierId BIGINT NOT NULL,
+        SupplierInvoiceNumber NVARCHAR(80) NOT NULL,
+        InvoiceDate DATE NOT NULL,
+        Subtotal DECIMAL(18,2) NOT NULL,
+        DiscountTotal DECIMAL(18,2) NOT NULL,
+        TaxTotal DECIMAL(18,2) NOT NULL,
+        GrandTotal DECIMAL(18,2) NOT NULL,
+        AmountPaid DECIMAL(18,2) NOT NULL,
+        AmountDue DECIMAL(18,2) NOT NULL,
+        PaymentMethod NVARCHAR(20) NOT NULL,
+        PaymentStatus NVARCHAR(20) NOT NULL,
+        Status NVARCHAR(20) NOT NULL CONSTRAINT DF_Purchases_Status DEFAULT ('Received'),
+        Notes NVARCHAR(500) NULL,
+        IsDeleted BIT NOT NULL CONSTRAINT DF_Purchases_IsDeleted DEFAULT (0),
+        CreatedByUserId BIGINT NOT NULL,
+        CreatedAtUtc DATETIME2 NOT NULL CONSTRAINT DF_Purchases_Created DEFAULT (SYSUTCDATETIME()),
+        UpdatedByUserId BIGINT NULL,
+        UpdatedAtUtc DATETIME2 NULL,
+        CancelledByUserId BIGINT NULL,
+        CancelledAtUtc DATETIME2 NULL,
+        RowVersion ROWVERSION NOT NULL,
+        CONSTRAINT FK_Purchases_Suppliers FOREIGN KEY (SupplierId) REFERENCES dbo.Suppliers(Id),
+        CONSTRAINT FK_Purchases_CreatedBy FOREIGN KEY (CreatedByUserId) REFERENCES dbo.Users(Id),
+        CONSTRAINT FK_Purchases_UpdatedBy FOREIGN KEY (UpdatedByUserId) REFERENCES dbo.Users(Id),
+        CONSTRAINT FK_Purchases_CancelledBy FOREIGN KEY (CancelledByUserId) REFERENCES dbo.Users(Id),
+        CONSTRAINT CK_Purchases_Amounts CHECK (Subtotal >= 0 AND DiscountTotal >= 0 AND TaxTotal >= 0 AND GrandTotal >= 0 AND AmountPaid >= 0 AND AmountDue >= 0 AND AmountPaid + AmountDue = GrandTotal),
+        CONSTRAINT CK_Purchases_PaymentMethod CHECK (PaymentMethod IN ('Cash','Bank','UPI','Credit')),
+        CONSTRAINT CK_Purchases_PaymentStatus CHECK (PaymentStatus IN ('Paid','Part paid','Credit')),
+        CONSTRAINT CK_Purchases_Status CHECK (Status IN ('Received','Cancelled'))
+    );
+    CREATE UNIQUE INDEX UX_Purchases_SupplierInvoice_Active ON dbo.Purchases(SupplierId, SupplierInvoiceNumber) WHERE IsDeleted=0;
+    CREATE INDEX IX_Purchases_Date ON dbo.Purchases(InvoiceDate DESC, Id DESC) INCLUDE (SupplierId, GrandTotal, PaymentStatus) WHERE IsDeleted=0;
+END;
+
+IF OBJECT_ID('dbo.PurchaseItems', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.PurchaseItems (
+        Id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_PurchaseItems PRIMARY KEY,
+        PurchaseId BIGINT NOT NULL,
+        MedicineId BIGINT NOT NULL,
+        MedicineName NVARCHAR(160) NOT NULL,
+        BatchNumber NVARCHAR(80) NOT NULL,
+        ExpiryDate DATE NOT NULL,
+        Quantity INT NOT NULL,
+        Rate DECIMAL(18,2) NOT NULL,
+        GstRate DECIMAL(5,2) NOT NULL,
+        DiscountAmount DECIMAL(18,2) NOT NULL CONSTRAINT DF_PurchaseItems_Discount DEFAULT (0),
+        TaxAmount DECIMAL(18,2) NOT NULL,
+        LineTotal DECIMAL(18,2) NOT NULL,
+        IsDeleted BIT NOT NULL CONSTRAINT DF_PurchaseItems_IsDeleted DEFAULT (0),
+        CONSTRAINT FK_PurchaseItems_Purchases FOREIGN KEY (PurchaseId) REFERENCES dbo.Purchases(Id),
+        CONSTRAINT FK_PurchaseItems_Medicines FOREIGN KEY (MedicineId) REFERENCES dbo.Medicines(Id),
+        CONSTRAINT CK_PurchaseItems_Values CHECK (Quantity > 0 AND Rate >= 0 AND GstRate >= 0 AND GstRate <= 100 AND DiscountAmount >= 0 AND TaxAmount >= 0 AND LineTotal >= 0)
+    );
+    CREATE UNIQUE INDEX UX_PurchaseItems_PurchaseMedicine_Active ON dbo.PurchaseItems(PurchaseId, MedicineId) WHERE IsDeleted=0;
+    CREATE INDEX IX_PurchaseItems_Medicine ON dbo.PurchaseItems(MedicineId, PurchaseId) WHERE IsDeleted=0;
+END;
+
 MERGE dbo.Roles AS target
 USING (VALUES
     ('Administrator', 1), ('Billing Operator', 1),

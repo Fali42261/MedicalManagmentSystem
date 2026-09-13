@@ -94,3 +94,15 @@ The bootstrap credentials only create the first administrator when that email do
 - All list and detail queries filter on `IsDeleted=0`, so soft-deleted suppliers remain auditable but are hidden from the UI.
 - Duplicate active business names and GSTIN values are rejected.
 - Every endpoint checks the current user's database permission for View, Add, Edit or Delete.
+
+### Step 5 — Purchases
+
+- `GET /api/purchases` supports supplier/invoice search, payment-status filtering and pagination.
+- `GET /api/purchases/{id}` returns the purchase header and immutable batch-wise line snapshots.
+- `POST /api/purchases` validates the supplier and medicines, calculates line GST/totals server-side and receives the purchase.
+- Purchase creation, medicine stock increases, inventory-ledger entries and supplier outstanding updates use one serializable SQL transaction.
+- Duplicate medicine batches and duplicate supplier invoice numbers are rejected.
+- `DELETE /api/purchases/{id}` is a controlled cancellation: it reverses stock and supplier outstanding, then sets `IsDeleted=1` and `Status='Cancelled'`.
+- Cancellation is rejected when received stock has already been consumed or the supplier balance cannot be reversed safely.
+- Cancelled purchases remain in the database for audit but are excluded from API lists and the UI.
+- Purchase View/Add/Delete permissions are checked against the database for every request.
