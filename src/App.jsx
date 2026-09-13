@@ -95,7 +95,7 @@ function AppContent() {
     purchases: <Purchases {...commonProps} />,
     sales: <Sales {...commonProps} />,
     returns: <Returns {...commonProps} />,
-    suppliers: <Suppliers {...commonProps} />,
+    suppliers: <Suppliers {...commonProps} permissions={new Set(session?.menu?.find(item => item.key === 'suppliers')?.permissions || [])} />,
     customers: <Customers {...commonProps} />,
     schemes: <Schemes {...commonProps} />,
     accounts: <Accounts {...commonProps} />,

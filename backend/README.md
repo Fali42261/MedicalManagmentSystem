@@ -83,3 +83,14 @@ The bootstrap credentials only create the first administrator when that email do
 - Masters already used by medicines cannot be renamed or deleted, preserving medicine history.
 - The medicine form loads its category, manufacturer and generic dropdowns from these API records.
 - Every endpoint checks the current user's database permission for View, Add, Edit or Delete.
+
+### Step 4 — Suppliers
+
+- `GET /api/suppliers` supports search, active/inactive status and pagination.
+- `GET /api/suppliers/{id}` returns one supplier that has not been deleted.
+- `POST /api/suppliers` creates identity, contact, GST, drug-licence, address and opening-balance details.
+- `PUT /api/suppliers/{id}` updates supplier details with row-version concurrency protection.
+- `DELETE /api/suppliers/{id}` sets `IsDeleted=1` and `IsActive=0`; no supplier row is physically deleted.
+- All list and detail queries filter on `IsDeleted=0`, so soft-deleted suppliers remain auditable but are hidden from the UI.
+- Duplicate active business names and GSTIN values are rejected.
+- Every endpoint checks the current user's database permission for View, Add, Edit or Delete.

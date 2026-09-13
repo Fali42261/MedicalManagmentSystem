@@ -16,6 +16,10 @@ public static class PermissionPolicies
     public const string MastersAdd = "masters:add";
     public const string MastersEdit = "masters:edit";
     public const string MastersDelete = "masters:delete";
+    public const string SuppliersView = "suppliers:view";
+    public const string SuppliersAdd = "suppliers:add";
+    public const string SuppliersEdit = "suppliers:edit";
+    public const string SuppliersDelete = "suppliers:delete";
 }
 
 public sealed record PermissionRequirement(string ModuleKey, string Permission) : IAuthorizationRequirement;

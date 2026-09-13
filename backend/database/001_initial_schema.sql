@@ -138,6 +138,37 @@ BEGIN
     CREATE INDEX IX_MedicineMasters_TypeActive ON dbo.MedicineMasters(MasterType, IsActive) INCLUDE (Name) WHERE IsDeleted=0;
 END;
 
+IF OBJECT_ID('dbo.Suppliers', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Suppliers (
+        Id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Suppliers PRIMARY KEY,
+        BusinessName NVARCHAR(160) NOT NULL,
+        ContactPerson NVARCHAR(120) NOT NULL,
+        Phone NVARCHAR(18) NOT NULL,
+        Email NVARCHAR(256) NULL,
+        Gstin NVARCHAR(15) NULL,
+        DrugLicenseNumber NVARCHAR(80) NULL,
+        Address NVARCHAR(300) NULL,
+        City NVARCHAR(100) NOT NULL,
+        State NVARCHAR(100) NOT NULL,
+        PostalCode NVARCHAR(6) NULL,
+        OutstandingBalance DECIMAL(18,2) NOT NULL CONSTRAINT DF_Suppliers_Balance DEFAULT (0),
+        IsActive BIT NOT NULL CONSTRAINT DF_Suppliers_IsActive DEFAULT (1),
+        IsDeleted BIT NOT NULL CONSTRAINT DF_Suppliers_IsDeleted DEFAULT (0),
+        CreatedByUserId BIGINT NOT NULL,
+        CreatedAtUtc DATETIME2 NOT NULL CONSTRAINT DF_Suppliers_Created DEFAULT (SYSUTCDATETIME()),
+        UpdatedByUserId BIGINT NULL,
+        UpdatedAtUtc DATETIME2 NULL,
+        RowVersion ROWVERSION NOT NULL,
+        CONSTRAINT FK_Suppliers_CreatedBy FOREIGN KEY (CreatedByUserId) REFERENCES dbo.Users(Id),
+        CONSTRAINT FK_Suppliers_UpdatedBy FOREIGN KEY (UpdatedByUserId) REFERENCES dbo.Users(Id),
+        CONSTRAINT CK_Suppliers_Balance CHECK (OutstandingBalance >= 0)
+    );
+    CREATE UNIQUE INDEX UX_Suppliers_Name_Active ON dbo.Suppliers(BusinessName) WHERE IsDeleted=0;
+    CREATE UNIQUE INDEX UX_Suppliers_Gstin_Active ON dbo.Suppliers(Gstin) WHERE Gstin IS NOT NULL AND IsDeleted=0;
+    CREATE INDEX IX_Suppliers_Search ON dbo.Suppliers(BusinessName, ContactPerson, City) INCLUDE (Phone, OutstandingBalance, IsActive) WHERE IsDeleted=0;
+END;
+
 MERGE dbo.Roles AS target
 USING (VALUES
     ('Administrator', 1), ('Billing Operator', 1),

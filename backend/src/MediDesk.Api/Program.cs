@@ -74,6 +74,10 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(PermissionPolicies.MastersAdd, policy => policy.AddRequirements(new PermissionRequirement("masters", "Add")));
     options.AddPolicy(PermissionPolicies.MastersEdit, policy => policy.AddRequirements(new PermissionRequirement("masters", "Edit")));
     options.AddPolicy(PermissionPolicies.MastersDelete, policy => policy.AddRequirements(new PermissionRequirement("masters", "Delete")));
+    options.AddPolicy(PermissionPolicies.SuppliersView, policy => policy.AddRequirements(new PermissionRequirement("suppliers", "View")));
+    options.AddPolicy(PermissionPolicies.SuppliersAdd, policy => policy.AddRequirements(new PermissionRequirement("suppliers", "Add")));
+    options.AddPolicy(PermissionPolicies.SuppliersEdit, policy => policy.AddRequirements(new PermissionRequirement("suppliers", "Edit")));
+    options.AddPolicy(PermissionPolicies.SuppliersDelete, policy => policy.AddRequirements(new PermissionRequirement("suppliers", "Delete")));
 });
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
@@ -96,11 +100,13 @@ builder.Services.AddScoped<IPermissionRepository, PermissionRepository>();
 builder.Services.AddScoped<IMedicineRepository, MedicineRepository>();
 builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
 builder.Services.AddScoped<IMedicineMasterRepository, MedicineMasterRepository>();
+builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
 builder.Services.AddScoped<INavigationService, NavigationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IMedicineService, MedicineService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IMedicineMasterService, MedicineMasterService>();
+builder.Services.AddScoped<ISupplierService, SupplierService>();
 builder.Services.AddScoped<IPasswordHasher<UserRecord>, PasswordHasher<UserRecord>>();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 builder.Services.AddHostedService<BootstrapAdminService>();

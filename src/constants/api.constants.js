@@ -26,6 +26,8 @@ export const BACKEND_API_ENDPOINTS = Object.freeze({
   INVENTORY_ADJUSTMENTS: '/inventory/adjustments',
   MEDICINE_MASTERS: '/medicine-masters',
   MEDICINE_MASTER_BY_ID: (id) => `/medicine-masters/${id}`,
+  SUPPLIERS: '/suppliers',
+  SUPPLIER_BY_ID: (id) => `/suppliers/${id}`,
 })
 
 export const API_QUERY = Object.freeze({
