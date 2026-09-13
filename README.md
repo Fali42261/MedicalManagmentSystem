@@ -20,6 +20,7 @@ VITE_API_TIMEOUT_MS=12000
 VITE_API_RETRY_COUNT=1
 VITE_APP_NAME=MediDesk
 VITE_APP_ENV=development
+VITE_DEFAULT_ROLE=administrator
 ```
 
 Never commit `.env`. Add new keys to `.env.example` with safe placeholder values.
@@ -32,11 +33,11 @@ src/
   config/       Validated environment configuration
   constants/    API endpoints, HTTP methods and static keys
   context/      Shared API-backed application state
+  features/     Module-grouped pharmacy screens
   hooks/        Reusable React hooks
   services/     Generic HTTP client and business API methods
   utils/        API response-to-UI model mappers
   App.jsx       Application shell and routing
-  pages.jsx     Feature screens
 ```
 
 ## Data flow

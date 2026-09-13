@@ -10,4 +10,5 @@ export const env = Object.freeze({
   apiRetryCount: Number(required('VITE_API_RETRY_COUNT', '1')),
   appName: required('VITE_APP_NAME', 'MediDesk'),
   appEnvironment: required('VITE_APP_ENV', 'development'),
+  defaultRole: required('VITE_DEFAULT_ROLE', 'administrator'),
 })
