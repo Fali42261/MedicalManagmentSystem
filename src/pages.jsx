@@ -33,6 +33,10 @@ function DataTable({ headers, children, className = '' }) {
   return <div className={`table-wrap ${className}`}><table><thead><tr>{headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{children}</tbody></table></div>
 }
 
+function DetailModal({ title, description, onClose, children, footer }) {
+  return <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}><section className="modal detail-modal"><div className="modal__header"><div><h2>{title}</h2><p>{description}</p></div><button className="icon-button" type="button" onClick={onClose}><Icon name="close"/></button></div><div className="detail-modal__body">{children}</div>{footer && <div className="modal__footer">{footer}</div>}</section></div>
+}
+
 function SalesChart({ compact = false }) {
   const points = salesTrend.map((value, index) => `${(index / (salesTrend.length - 1)) * 100},${90 - value}`).join(' ')
   return (
@@ -90,14 +94,14 @@ export function Dashboard({ navigate }) {
   )
 }
 
-function MedicineModal({ onClose, onSave }) {
+function MedicineModal({ item, onClose, onSave }) {
   return (
     <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <form className="modal" onSubmit={(e) => { e.preventDefault(); onSave() }}>
-        <div className="modal__header"><div><h2>Add medicine</h2><p>Create a medicine with batch, pricing and stock details.</p></div><button className="icon-button" type="button" onClick={onClose}><Icon name="close" /></button></div>
-        <div className="form-section"><h3>Medicine details</h3><div className="form-grid"><label>Medicine name<input required placeholder="e.g. Paracetamol 500mg" /></label><label>Generic name<input required placeholder="e.g. Paracetamol" /></label><label>Category<select defaultValue="Analgesic"><option>Analgesic</option><option>Antibiotic</option><option>Vitamin</option><option>Antacid</option></select></label><label>Manufacturer<input placeholder="Manufacturer name" /></label><label>Dosage form<select><option>Tablet</option><option>Capsule</option><option>Syrup</option><option>Injection</option></select></label><label>Strength<input placeholder="500mg" /></label></div></div>
-        <div className="form-section"><h3>Batch, pricing and stock</h3><div className="form-grid"><label>Batch number<input required placeholder="Batch no." /></label><label>Expiry date<input required type="month" /></label><label>Purchase price<input required type="number" step="0.01" placeholder="₹ 0.00" /></label><label>Sale price<input required type="number" step="0.01" placeholder="₹ 0.00" /></label><label>Opening stock<input required type="number" placeholder="0" /></label><label>Minimum stock<input type="number" placeholder="10" /></label><label>GST rate<select><option>5%</option><option>12%</option><option>18%</option></select></label><label>Rack number<input placeholder="e.g. A-01" /></label></div></div>
-        <div className="modal__footer"><Button variant="ghost" onClick={onClose}>Cancel</Button><Button type="submit" icon="check">Save medicine</Button></div>
+        <div className="modal__header"><div><h2>{item ? 'Edit medicine' : 'Add medicine'}</h2><p>{item ? 'Update medicine, pricing and reorder information.' : 'Create a medicine with batch, pricing and stock details.'}</p></div><button className="icon-button" type="button" onClick={onClose}><Icon name="close" /></button></div>
+        <div className="form-section"><h3>Medicine details</h3><div className="form-grid"><label>Medicine name<input required defaultValue={item?.name} placeholder="e.g. Paracetamol 500mg" /></label><label>Generic name<input required defaultValue={item?.generic} placeholder="e.g. Paracetamol" /></label><label>Category<select defaultValue={item?.category || 'Analgesic'}><option>Analgesic</option><option>Antibiotic</option><option>Vitamin</option><option>Antacid</option><option>Anti-diabetic</option></select></label><label>Manufacturer<input placeholder="Manufacturer name" /></label><label>Dosage form<select><option>Tablet</option><option>Capsule</option><option>Syrup</option><option>Injection</option></select></label><label>Strength<input placeholder="500mg" /></label></div></div>
+        <div className="form-section"><h3>Batch, pricing and stock</h3><div className="form-grid"><label>Batch number<input required defaultValue={item?.batch} placeholder="Batch no." /></label><label>Expiry date<input required type="month" /></label><label>Purchase price<input required type="number" step="0.01" defaultValue={item?.purchase} placeholder="₹ 0.00" /></label><label>Sale price<input required type="number" step="0.01" defaultValue={item?.sale} placeholder="₹ 0.00" /></label><label>Opening stock<input required type="number" defaultValue={item?.stock} placeholder="0" /></label><label>Minimum stock<input type="number" defaultValue={item?.minStock} placeholder="10" /></label><label>GST rate<select><option>5%</option><option>12%</option><option>18%</option></select></label><label>Rack number<input defaultValue={item?.rack} placeholder="e.g. A-01" /></label></div></div>
+        <div className="modal__footer"><Button variant="ghost" onClick={onClose}>Cancel</Button><Button type="submit" icon="check">{item ? 'Update medicine' : 'Save medicine'}</Button></div>
       </form>
     </div>
   )
@@ -107,6 +111,7 @@ export function Medicines({ showToast }) {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('All status')
   const [showModal, setShowModal] = useState(false)
+  const [editMedicine, setEditMedicine] = useState(null)
   const visible = medicines.filter((item) => `${item.name} ${item.generic} ${item.batch}`.toLowerCase().includes(search.toLowerCase()) && (status === 'All status' || item.status === status))
   return (
     <>
@@ -114,11 +119,16 @@ export function Medicines({ showToast }) {
       <Panel title="Medicine master" action={<Badge>{visible.length} medicines</Badge>}>
         <div className="toolbar"><SearchBox value={search} onChange={setSearch} placeholder="Search medicine, generic name or batch..."/><select value={status} onChange={(e) => setStatus(e.target.value)}><option>All status</option><option>In stock</option><option>Low stock</option><option>Expiring</option></select><Button variant="secondary" icon="filter" onClick={() => showToast('Medicine filters applied')}>Filters</Button></div>
         <DataTable headers={['Medicine','Category','Batch / Expiry','Stock','Purchase','Sale','Rack','Status','']}>
-          {visible.map((item) => <tr key={item.id}><td><div className="medicine-cell"><span><Icon name="pill" size={17}/></span><div><b>{item.name}</b><small>{item.generic}</small></div></div></td><td>{item.category}</td><td><b>{item.batch}</b><small>{item.expiry}</small></td><td><b className={item.stock < item.minStock ? 'danger-text' : ''}>{item.stock}</b><small>Min. {item.minStock}</small></td><td>{money(item.purchase)}</td><td><b>{money(item.sale)}</b></td><td>{item.rack}</td><td><Badge tone={item.status === 'In stock' ? 'success' : item.status === 'Expiring' ? 'warning' : 'danger'}>{item.status}</Badge></td><td><button className="icon-button"><Icon name="edit" size={17}/></button></td></tr>)}
+          {visible.map((item) => <tr key={item.id}><td><div className="medicine-cell"><span><Icon name="pill" size={17}/></span><div><b>{item.name}</b><small>{item.generic}</small></div></div></td><td>{item.category}</td><td><b>{item.batch}</b><small>{item.expiry}</small></td><td><b className={item.stock < item.minStock ? 'danger-text' : ''}>{item.stock}</b><small>Min. {item.minStock}</small></td><td>{money(item.purchase)}</td><td><b>{money(item.sale)}</b></td><td>{item.rack}</td><td><Badge tone={item.status === 'In stock' ? 'success' : item.status === 'Expiring' ? 'warning' : 'danger'}>{item.status}</Badge></td><td><button className="icon-button" onClick={() => setEditMedicine(item)}><Icon name="edit" size={17}/></button></td></tr>)}
         </DataTable>
-        <div className="pagination"><span>Showing 1–{visible.length} of {medicines.length}</span><div><button disabled>‹</button><button className="active">1</button><button>2</button><button>›</button></div></div>
+        <div className="pagination"><span>Showing 1–{visible.length} of {medicines.length}</span><div><button disabled>‹</button><button className="active">1</button><button disabled>›</button></div></div>
       </Panel>
       {showModal && <MedicineModal onClose={() => setShowModal(false)} onSave={() => { setShowModal(false); showToast('Medicine saved successfully') }}/>} 
+      {editMedicine && <MedicineModal
+        item={editMedicine}
+        onClose={() => setEditMedicine(null)}
+        onSave={() => { setEditMedicine(null); showToast('Medicine updated successfully') }}
+      />}
     </>
   )
 }
@@ -145,6 +155,7 @@ export function Inventory({ showToast }) {
 export function Suppliers({ showToast }) {
   const [search, setSearch] = useState('')
   const [adding, setAdding] = useState(false)
+  const [selected, setSelected] = useState(null)
   const visible = suppliers.filter((item) => `${item.name} ${item.contact} ${item.city}`.toLowerCase().includes(search.toLowerCase()))
   return (
     <>
@@ -153,17 +164,20 @@ export function Suppliers({ showToast }) {
       <Panel title="Supplier directory" action={<Badge>{visible.length} active</Badge>}>
         <div className="toolbar"><SearchBox value={search} onChange={setSearch} placeholder="Search suppliers..."/><Button variant="secondary" icon="download" onClick={() => showToast('Supplier directory exported')}>Export</Button></div>
         <DataTable headers={['Supplier','Contact','Location','Outstanding','Last purchase','Status','']}>
-          {visible.map((supplier) => <tr key={supplier.id}><td><b>{supplier.name}</b><small>{supplier.id}</small></td><td>{supplier.contact}<small>{supplier.phone}</small></td><td>{supplier.city}</td><td><b className={supplier.balance ? 'warning-text' : ''}>{money(supplier.balance)}</b></td><td>8 Sep 2026</td><td><Badge tone="success">{supplier.status}</Badge></td><td><button className="icon-button"><Icon name="chevron" size={17}/></button></td></tr>)}
+          {visible.map((supplier) => <tr key={supplier.id}><td><b>{supplier.name}</b><small>{supplier.id}</small></td><td>{supplier.contact}<small>{supplier.phone}</small></td><td>{supplier.city}</td><td><b className={supplier.balance ? 'warning-text' : ''}>{money(supplier.balance)}</b></td><td>8 Sep 2026</td><td><Badge tone="success">{supplier.status}</Badge></td><td><button className="icon-button" onClick={() => setSelected(supplier)}><Icon name="chevron" size={17}/></button></td></tr>)}
         </DataTable>
       </Panel>
+      {selected && <DetailModal title={selected.name} description={`${selected.id} · Active supplier`} onClose={() => setSelected(null)} footer={<><Button variant="ghost" onClick={() => setSelected(null)}>Close</Button><Button icon="edit" onClick={() => { setSelected(null); setAdding(true) }}>Edit supplier</Button></>}><div className="record-grid"><div><span>Contact person</span><b>{selected.contact}</b></div><div><span>Phone</span><b>{selected.phone}</b></div><div><span>Location</span><b>{selected.city}</b></div><div><span>Outstanding</span><b className="warning-text">{money(selected.balance)}</b></div></div><Panel title="Recent purchase activity"><DataTable headers={['Invoice','Date','Amount','Payment']}><tr><td><b className="primary-text">PUR-2024-0412</b></td><td>12 Sep 2026</td><td><b>₹24,580</b></td><td>Part paid</td></tr></DataTable></Panel></DetailModal>}
     </>
   )
 }
 
 export function Purchases({ showToast }) {
   const [create, setCreate] = useState(false)
-  const lines = medicines.slice(0, 3)
-  const subtotal = lines.reduce((sum, item, index) => sum + item.purchase * [100, 50, 30][index], 0)
+  const [selected, setSelected] = useState(null)
+  const [search, setSearch] = useState('')
+  const [lines, setLines] = useState(medicines.slice(0, 3).map((item, index) => ({ ...item, qty: [100, 50, 30][index] })))
+  const subtotal = lines.reduce((sum, item) => sum + item.purchase * item.qty, 0)
   return (
     <>
       <PageHeader title="Purchases" description="Record supplier invoices and receive stock batch-wise."><Button icon="plus" onClick={() => setCreate(!create)}>New purchase</Button></PageHeader>
@@ -171,13 +185,14 @@ export function Purchases({ showToast }) {
         <form onSubmit={(e) => { e.preventDefault(); setCreate(false); showToast('Purchase recorded and stock updated') }}>
           <div className="document-fields"><label>Supplier<select><option>Sun Pharma Distributors</option><option>Cipla Healthcare Supply</option></select></label><label>Supplier invoice<input defaultValue="SPD-2026-0912"/></label><label>Invoice date<input type="date" defaultValue="2026-09-12"/></label><label>Payment<select><option>Credit</option><option>Cash</option><option>Bank</option></select></label></div>
           <DataTable headers={['Medicine','Batch','Expiry','Qty','Rate','GST','Amount','']}>
-            {lines.map((item, index) => <tr key={item.id}><td><b>{item.name}</b></td><td><input className="table-input" defaultValue={item.batch}/></td><td><input className="table-input" defaultValue={item.expiry}/></td><td><input className="table-input table-input--small" type="number" defaultValue={[100,50,30][index]}/></td><td><input className="table-input table-input--small" type="number" defaultValue={item.purchase}/></td><td>12%</td><td><b>{money(item.purchase * [100,50,30][index])}</b></td><td><button className="icon-button danger-text"><Icon name="trash" size={16}/></button></td></tr>)}
+            {lines.map((item) => <tr key={item.id}><td><b>{item.name}</b></td><td><input className="table-input" defaultValue={item.batch}/></td><td><input className="table-input" defaultValue={item.expiry}/></td><td><input className="table-input table-input--small" type="number" value={item.qty} onChange={(e) => setLines(rows => rows.map(row => row.id === item.id ? {...row, qty: Math.max(1, Number(e.target.value))} : row))}/></td><td><input className="table-input table-input--small" type="number" value={item.purchase} onChange={(e) => setLines(rows => rows.map(row => row.id === item.id ? {...row, purchase: Math.max(0, Number(e.target.value))} : row))}/></td><td>12%</td><td><b>{money(item.purchase * item.qty)}</b></td><td><button type="button" className="icon-button danger-text" onClick={() => setLines(rows => rows.filter(row => row.id !== item.id))}><Icon name="trash" size={16}/></button></td></tr>)}
           </DataTable>
-          <div className="document-footer"><Button variant="secondary" icon="plus" onClick={() => showToast('Medicine row added to purchase')}>Add item</Button><div className="totals"><span>Subtotal<b>{money(subtotal)}</b></span><span>GST (12%)<b>{money(subtotal * .12)}</b></span><strong>Total amount<b>{money(subtotal * 1.12)}</b></strong><Button type="submit" icon="check">Save purchase</Button></div></div>
+          <div className="document-footer"><Button variant="secondary" icon="plus" onClick={() => { const next = medicines.find(item => !lines.some(row => row.id === item.id)); if (next) setLines(rows => [...rows, {...next, qty: 1}]); else showToast('All available medicines are already added') }}>Add item</Button><div className="totals"><span>Subtotal<b>{money(subtotal)}</b></span><span>GST (12%)<b>{money(subtotal * .12)}</b></span><strong>Total amount<b>{money(subtotal * 1.12)}</b></strong><Button type="submit" icon="check" disabled={!lines.length}>Save purchase</Button></div></div>
         </form>
-      </Panel> : <Panel title="Purchase history"><div className="toolbar"><SearchBox value="" onChange={() => {}} placeholder="Search invoice or supplier..."/><select><option>All payments</option><option>Paid</option><option>Credit</option></select></div><DataTable headers={['Purchase no.','Supplier','Date','Items','Payment','Total','Status','']}>
-        {purchases.map((purchase) => <tr key={purchase.id}><td><b className="primary-text">{purchase.id}</b></td><td>{purchase.supplier}</td><td>{purchase.date}</td><td>{purchase.items}</td><td>{purchase.payment}</td><td><b>{money(purchase.total)}</b></td><td><Badge tone="success">{purchase.status}</Badge></td><td><button className="icon-button"><Icon name="chevron" size={17}/></button></td></tr>)}
+      </Panel> : <Panel title="Purchase history"><div className="toolbar"><SearchBox value={search} onChange={setSearch} placeholder="Search invoice or supplier..."/><select><option>All payments</option><option>Paid</option><option>Credit</option></select></div><DataTable headers={['Purchase no.','Supplier','Date','Items','Payment','Total','Status','']}>
+        {purchases.filter(purchase => `${purchase.id} ${purchase.supplier}`.toLowerCase().includes(search.toLowerCase())).map((purchase) => <tr key={purchase.id}><td><b className="primary-text">{purchase.id}</b></td><td>{purchase.supplier}</td><td>{purchase.date}</td><td>{purchase.items}</td><td>{purchase.payment}</td><td><b>{money(purchase.total)}</b></td><td><Badge tone="success">{purchase.status}</Badge></td><td><button className="icon-button" onClick={() => setSelected(purchase)}><Icon name="chevron" size={17}/></button></td></tr>)}
       </DataTable></Panel>}
+      {selected && <DetailModal title={selected.id} description="Purchase invoice details" onClose={() => setSelected(null)} footer={<><Button variant="ghost" onClick={() => setSelected(null)}>Close</Button><Button icon="print" onClick={() => showToast('Purchase invoice sent to printer')}>Print invoice</Button></>}><div className="record-grid"><div><span>Supplier</span><b>{selected.supplier}</b></div><div><span>Invoice date</span><b>{selected.date}</b></div><div><span>Items</span><b>{selected.items}</b></div><div><span>Total</span><b>{money(selected.total)}</b></div><div><span>Payment</span><b>{selected.payment}</b></div><div><span>Status</span><Badge tone="success">{selected.status}</Badge></div></div></DetailModal>}
     </>
   )
 }
@@ -187,6 +202,8 @@ export function Sales({ showToast }) {
   const [query, setQuery] = useState('')
   const [history, setHistory] = useState(false)
   const [payment, setPayment] = useState('Cash')
+  const [addingCustomer, setAddingCustomer] = useState(false)
+  const [invoiceSearch, setInvoiceSearch] = useState('')
   const subtotal = cart.reduce((sum, item) => sum + item.sale * item.qty, 0)
   const updateQty = (id, amount) => setCart((items) => items.map((item) => item.id === id ? {...item, qty: Math.max(1, item.qty + amount)} : item))
   const addItem = (item) => setCart((items) => items.some((row) => row.id === item.id) ? items.map((row) => row.id === item.id ? {...row, qty: row.qty + 1} : row) : [...items, {...item, qty: 1}])
@@ -194,8 +211,8 @@ export function Sales({ showToast }) {
   return (
     <>
       <PageHeader title="Sales & Billing" description="Fast pharmacy POS with batch-aware stock deduction."><Button variant="secondary" icon={history ? 'cart' : 'receipt'} onClick={() => setHistory(!history)}>{history ? 'New sale' : 'View invoices'}</Button></PageHeader>
-      {history ? <Panel title="Sales invoice history" action={<Badge>{invoices.length} invoices</Badge>}><div className="toolbar"><SearchBox value="" onChange={() => {}} placeholder="Search invoice or customer..."/><Button variant="secondary" icon="download" onClick={() => showToast('Invoice register exported')}>Export</Button></div><DataTable headers={['Invoice','Customer','Time','Items','Payment','Total','Status','']}>
-        {invoices.map((invoice) => <tr key={invoice.id}><td><b className="primary-text">{invoice.id}</b></td><td>{invoice.customer}</td><td>{invoice.time}</td><td>{invoice.items}</td><td>{invoice.payment}</td><td><b>{money(invoice.total)}</b></td><td><Badge tone="success">{invoice.status}</Badge></td><td><button className="text-button" onClick={() => showToast(`${invoice.id} ready to print`)}>Print</button></td></tr>)}
+      {history ? <Panel title="Sales invoice history" action={<Badge>{invoices.length} invoices</Badge>}><div className="toolbar"><SearchBox value={invoiceSearch} onChange={setInvoiceSearch} placeholder="Search invoice or customer..."/><Button variant="secondary" icon="download" onClick={() => showToast('Invoice register exported')}>Export</Button></div><DataTable headers={['Invoice','Customer','Time','Items','Payment','Total','Status','']}>
+        {invoices.filter(invoice => `${invoice.id} ${invoice.customer}`.toLowerCase().includes(invoiceSearch.toLowerCase())).map((invoice) => <tr key={invoice.id}><td><b className="primary-text">{invoice.id}</b></td><td>{invoice.customer}</td><td>{invoice.time}</td><td>{invoice.items}</td><td>{invoice.payment}</td><td><b>{money(invoice.total)}</b></td><td><Badge tone="success">{invoice.status}</Badge></td><td><button className="text-button" onClick={() => showToast(`${invoice.id} ready to print`)}>Print</button></td></tr>)}
       </DataTable></Panel> : <div className="pos-layout">
         <Panel title="New sale" className="pos-main">
           <div className="pos-search"><SearchBox value={query} onChange={setQuery} placeholder="Scan barcode or search medicine..."/></div>
@@ -207,7 +224,8 @@ export function Sales({ showToast }) {
         <aside className="bill-panel">
           <h2>Bill summary</h2>
           <label>Customer (optional)<select><option>Walk-in customer</option><option>Ramesh Kumar</option></select></label>
-          <button className="add-customer"><Icon name="plus" size={15}/> Add customer</button>
+          <button className="add-customer" onClick={() => setAddingCustomer(!addingCustomer)}><Icon name="plus" size={15}/> Add customer</button>
+          {addingCustomer && <form className="pos-customer" onSubmit={(e) => { e.preventDefault(); setAddingCustomer(false); showToast('Customer added to current bill') }}><input required placeholder="Customer name"/><input required placeholder="Phone number"/><Button type="submit">Add to bill</Button></form>}
           <div className="bill-divider"></div>
           <div className="bill-line"><span>Subtotal</span><b>{money(subtotal)}</b></div><div className="bill-line"><span>Discount</span><b>− ₹0</b></div><div className="bill-line"><span>GST included</span><b>{money(subtotal * .12)}</b></div><div className="bill-total"><span>Total</span><strong>{money(subtotal)}</strong></div>
           <label>Payment method<div className="payment-options">{['Cash','UPI','Card'].map((item) => <button className={payment === item ? 'active' : ''} type="button" key={item} onClick={() => setPayment(item)}>{item}</button>)}</div></label>
@@ -255,15 +273,17 @@ const masterData = {
 export function Masters({ showToast }) {
   const [tab, setTab] = useState('Categories')
   const [adding, setAdding] = useState(false)
+  const [search, setSearch] = useState('')
+  const [editing, setEditing] = useState(null)
   return (
     <>
       <PageHeader title="Medicine Masters" description="Maintain categories, manufacturers and salt/generic names."><Button icon="plus" onClick={() => setAdding(!adding)}>Add {tab === 'Salt / Generic' ? 'salt' : tab.slice(0, -1).toLowerCase()}</Button></PageHeader>
-      {adding && <Panel title={`New ${tab === 'Salt / Generic' ? 'salt / generic' : tab.slice(0, -1).toLowerCase()}`} className="inline-form-panel"><form className="master-form" onSubmit={(e) => { e.preventDefault(); setAdding(false); showToast(`${tab} master saved`) }}><label>Name<input required placeholder={`Enter ${tab.toLowerCase()} name`}/></label><label>Description<input placeholder="Optional description"/></label><Button type="submit">Save</Button></form></Panel>}
+      {(adding || editing) && <Panel title={editing ? `Edit ${tab.toLowerCase()}` : `New ${tab === 'Salt / Generic' ? 'salt / generic' : tab.slice(0, -1).toLowerCase()}`} className="inline-form-panel"><form className="master-form" onSubmit={(e) => { e.preventDefault(); setAdding(false); setEditing(null); showToast(`${tab} master ${editing ? 'updated' : 'saved'}`) }}><label>Name<input required defaultValue={editing?.[1]} placeholder={`Enter ${tab.toLowerCase()} name`}/></label><label>Description<input defaultValue={editing?.[2]} placeholder="Optional description"/></label><Button type="submit">Save</Button></form></Panel>}
       <Panel title="Master directory" action={<Badge>{masterData[tab].length} records</Badge>}>
         <div className="tabs">{Object.keys(masterData).map((item) => <button key={item} className={tab === item ? 'active' : ''} onClick={() => setTab(item)}>{item}</button>)}</div>
-        <div className="toolbar"><SearchBox value="" onChange={() => {}} placeholder={`Search ${tab.toLowerCase()}...`}/><Button variant="secondary" icon="download" onClick={() => showToast(`${tab} master exported`)}>Export</Button></div>
+        <div className="toolbar"><SearchBox value={search} onChange={setSearch} placeholder={`Search ${tab.toLowerCase()}...`}/><Button variant="secondary" icon="download" onClick={() => showToast(`${tab} master exported`)}>Export</Button></div>
         <DataTable headers={['Code','Name','Usage','Status','Last updated','']}>
-          {masterData[tab].map(([code,name,usage]) => <tr key={code}><td><b className="primary-text">{code}</b></td><td><b>{name}</b></td><td>{usage}</td><td><Badge tone="success">Active</Badge></td><td>12 Sep 2026</td><td><button className="icon-button"><Icon name="edit" size={16}/></button></td></tr>)}
+          {masterData[tab].filter(row => row.join(' ').toLowerCase().includes(search.toLowerCase())).map(([code,name,usage]) => <tr key={code}><td><b className="primary-text">{code}</b></td><td><b>{name}</b></td><td>{usage}</td><td><Badge tone="success">Active</Badge></td><td>12 Sep 2026</td><td><button className="icon-button" onClick={() => { setAdding(false); setEditing([code,name,usage]) }}><Icon name="edit" size={16}/></button></td></tr>)}
         </DataTable>
       </Panel>
     </>
@@ -280,6 +300,7 @@ const customers = [
 export function Customers({ showToast }) {
   const [search, setSearch] = useState('')
   const [adding, setAdding] = useState(false)
+  const [selected, setSelected] = useState(null)
   const visible = customers.filter((item) => `${item.name} ${item.phone}`.toLowerCase().includes(search.toLowerCase()))
   return (
     <>
@@ -287,21 +308,26 @@ export function Customers({ showToast }) {
       {adding && <Panel title="New customer" className="inline-form-panel"><form className="inline-form customer-form" onSubmit={(e) => { e.preventDefault(); setAdding(false); showToast('Customer saved successfully') }}><label>Customer name<input required placeholder="Full name"/></label><label>Phone<input required placeholder="+91"/></label><label>Email<input type="email" placeholder="Optional"/></label><label>Credit limit<input type="number" placeholder="₹ 0"/></label><Button type="submit">Save customer</Button></form></Panel>}
       <div className="mini-stats customer-stats"><div><Icon name="users"/><span>Total customers<b>248</b></span></div><div><Icon name="receipt"/><span>Credit outstanding<b className="warning-text">₹18,420</b></span></div><div><Icon name="cart"/><span>Repeat customers<b>64%</b></span></div></div>
       <Panel title="Customer directory"><div className="toolbar"><SearchBox value={search} onChange={setSearch} placeholder="Search customer or phone..."/><select><option>All customers</option><option>With credit</option></select></div><DataTable headers={['Customer','Phone','Total visits','Lifetime sales','Credit balance','Last purchase','']}>
-        {visible.map((customer) => <tr key={customer.id}><td><b>{customer.name}</b><small>{customer.id}</small></td><td>{customer.phone}</td><td>{customer.visits}</td><td><b>{money(customer.sales)}</b></td><td><b className={customer.credit ? 'warning-text' : ''}>{money(customer.credit)}</b></td><td>{customer.last}</td><td><button className="icon-button"><Icon name="chevron" size={16}/></button></td></tr>)}
+        {visible.map((customer) => <tr key={customer.id}><td><b>{customer.name}</b><small>{customer.id}</small></td><td>{customer.phone}</td><td>{customer.visits}</td><td><b>{money(customer.sales)}</b></td><td><b className={customer.credit ? 'warning-text' : ''}>{money(customer.credit)}</b></td><td>{customer.last}</td><td><button className="icon-button" onClick={() => setSelected(customer)}><Icon name="chevron" size={16}/></button></td></tr>)}
       </DataTable></Panel>
+      {selected && <DetailModal title={selected.name} description={`${selected.id} · Customer account`} onClose={() => setSelected(null)} footer={<><Button variant="ghost" onClick={() => setSelected(null)}>Close</Button><Button onClick={() => { setSelected(null); showToast('Receipt form opened for customer') }}>Record receipt</Button></>}><div className="record-grid"><div><span>Phone</span><b>{selected.phone}</b></div><div><span>Total visits</span><b>{selected.visits}</b></div><div><span>Lifetime sales</span><b>{money(selected.sales)}</b></div><div><span>Credit balance</span><b className={selected.credit ? 'warning-text' : ''}>{money(selected.credit)}</b></div></div><Panel title="Recent activity"><DataTable headers={['Last purchase','Invoices','Account status']}><tr><td>{selected.last}</td><td>{selected.visits}</td><td><Badge tone="success">Active</Badge></td></tr></DataTable></Panel></DetailModal>}
     </>
   )
 }
 
 export function Schemes({ showToast }) {
   const [adding, setAdding] = useState(false)
+  const [search, setSearch] = useState('')
+  const [status, setStatus] = useState('All status')
+  const [editing, setEditing] = useState(null)
   const rows = [
     ['SCH-014', 'Buy 10 Get 1', 'Paracetamol 500mg', 'Quantity scheme', '01–30 Sep 2026', 'Active'],
     ['SCH-013', '5% Vitamin Discount', 'Vitamin category', 'Item discount', '01 Sep–31 Oct 2026', 'Active'],
     ['SCH-012', '₹100 off above ₹2,000', 'Entire bill', 'Bill discount', '01–15 Sep 2026', 'Active'],
     ['SCH-011', 'Stock Clearance', 'Near-expiry items', 'Clearance', 'Ended 31 Aug 2026', 'Expired'],
   ]
-  return <><PageHeader title="Schemes & Discounts" description="Configure item offers, bill discounts and stock-clearance schemes."><Button icon="plus" onClick={() => setAdding(!adding)}>New scheme</Button></PageHeader>{adding&&<Panel title="Create scheme" className="inline-form-panel"><form className="scheme-form" onSubmit={(e)=>{e.preventDefault();setAdding(false);showToast('Scheme created successfully')}}><label>Scheme name<input required placeholder="Offer name"/></label><label>Scheme type<select><option>Quantity scheme</option><option>Item discount</option><option>Bill discount</option></select></label><label>Value<input required placeholder="e.g. 5%"/></label><label>Valid until<input type="date"/></label><Button type="submit">Save scheme</Button></form></Panel>}<div className="mini-stats customer-stats"><div><Icon name="receipt"/><span>Active schemes<b>3</b></span></div><div><Icon name="cart"/><span>Discount given<b>₹8,420</b></span></div><div><Icon name="chart"/><span>Scheme sales<b>₹42,600</b></span></div></div><Panel title="Scheme register"><div className="toolbar"><SearchBox value="" onChange={()=>{}} placeholder="Search schemes..."/><select><option>All types</option><option>Item discount</option><option>Bill discount</option></select></div><DataTable headers={['Code','Scheme','Applies to','Type','Validity','Status','']}>{rows.map(row=><tr key={row[0]}><td><b className="primary-text">{row[0]}</b></td><td><b>{row[1]}</b></td><td>{row[2]}</td><td>{row[3]}</td><td>{row[4]}</td><td><Badge tone={row[5]==='Active'?'success':'neutral'}>{row[5]}</Badge></td><td><button className="icon-button"><Icon name="edit" size={16}/></button></td></tr>)}</DataTable></Panel></>
+  const visible = rows.filter(row => row.join(' ').toLowerCase().includes(search.toLowerCase()) && (status === 'All status' || row[5] === status))
+  return <><PageHeader title="Schemes & Discounts" description="Configure item offers, bill discounts and stock-clearance schemes."><Button icon="plus" onClick={() => { setEditing(null); setAdding(!adding) }}>New scheme</Button></PageHeader>{(adding || editing) && <Panel title={editing ? 'Edit scheme' : 'Create scheme'} className="inline-form-panel"><form className="scheme-form" onSubmit={(e)=>{e.preventDefault();setAdding(false);setEditing(null);showToast(editing ? 'Scheme updated successfully' : 'Scheme created successfully')}}><label>Scheme name<input required defaultValue={editing?.[1]} placeholder="Offer name"/></label><label>Scheme type<select defaultValue={editing?.[3]}><option>Quantity scheme</option><option>Item discount</option><option>Bill discount</option><option>Clearance</option></select></label><label>Value<input required placeholder="e.g. 5%"/></label><label>Valid until<input type="date"/></label><Button type="submit">Save scheme</Button></form></Panel>}<div className="mini-stats customer-stats"><div><Icon name="receipt"/><span>Active schemes<b>3</b></span></div><div><Icon name="cart"/><span>Discount given<b>₹8,420</b></span></div><div><Icon name="chart"/><span>Scheme sales<b>₹42,600</b></span></div></div><Panel title="Scheme register"><div className="toolbar"><SearchBox value={search} onChange={setSearch} placeholder="Search schemes..."/><select value={status} onChange={(e) => setStatus(e.target.value)}><option>All status</option><option>Active</option><option>Expired</option></select></div><DataTable headers={['Code','Scheme','Applies to','Type','Validity','Status','']}>{visible.map(row=><tr key={row[0]}><td><b className="primary-text">{row[0]}</b></td><td><b>{row[1]}</b></td><td>{row[2]}</td><td>{row[3]}</td><td>{row[4]}</td><td><Badge tone={row[5]==='Active'?'success':'neutral'}>{row[5]}</Badge></td><td><button className="icon-button" onClick={() => { setAdding(false); setEditing(row) }}><Icon name="edit" size={16}/></button></td></tr>)}</DataTable></Panel></>
 }
 
 export function Accounts({ showToast }) {
@@ -340,13 +366,14 @@ export function DataTools({ showToast }) {
 }
 
 export function Login({ onLogin, theme, setTheme }) {
+  const [resetSent, setResetSent] = useState(false)
   return (
     <div className="login-page">
       <div className="login-brand"><span className="brand__mark"><Icon name="pill" size={22}/></span><b>MediDesk</b><small>Smart pharmacy operations, simplified.</small></div>
       <div className="login-card">
         <div className="login-heading"><div><span>Welcome back</span><h1>Sign in to your store</h1><p>Enter your credentials to continue to MediDesk.</p></div><button className="icon-button" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}><Icon name={theme === 'light' ? 'moon' : 'sun'} size={19}/></button></div>
-        <form onSubmit={(e) => { e.preventDefault(); onLogin() }}><label>Email or username<input required defaultValue="admin@alimedical.in"/></label><label>Password<input required type="password" defaultValue="password"/></label><div className="login-options"><label><input type="checkbox" defaultChecked/> Remember me</label><button type="button">Forgot password?</button></div><Button type="submit">Sign in</Button></form>
-        <p className="demo-note">Demo access is pre-filled — click Sign in to continue.</p>
+        <form onSubmit={(e) => { e.preventDefault(); onLogin() }}><label>Email or username<input required defaultValue="admin@alimedical.in"/></label><label>Password<input required type="password" defaultValue="password"/></label><div className="login-options"><label><input type="checkbox" defaultChecked/> Remember me</label><button type="button" onClick={() => setResetSent(true)}>Forgot password?</button></div><Button type="submit">Sign in</Button></form>
+        <p className="demo-note">{resetSent ? 'Password reset instructions sent to the registered email.' : 'Demo access is pre-filled — click Sign in to continue.'}</p>
       </div>
       <footer>© 2026 MediDesk · Secure pharmacy management</footer>
     </div>
