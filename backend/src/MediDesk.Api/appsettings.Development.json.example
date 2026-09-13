@@ -1,0 +1,13 @@
+{
+  "ConnectionStrings": {
+    "MediDesk": "Server=localhost,1433;Database=MediDesk;User Id=sa;Password=CHANGE_ME;TrustServerCertificate=True;Encrypt=True"
+  },
+  "Jwt": {
+    "SigningKey": "CHANGE_TO_A_RANDOM_SECRET_WITH_AT_LEAST_32_BYTES"
+  },
+  "BootstrapAdmin": {
+    "FullName": "Ali",
+    "Email": "admin@example.com",
+    "Password": "CHANGE_ME_NOW"
+  }
+}

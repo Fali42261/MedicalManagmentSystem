@@ -1,0 +1,100 @@
+using System.Text;
+using System.Threading.RateLimiting;
+using MediDesk.Api.Services;
+using MediDesk.Business.Interfaces;
+using MediDesk.Business.Services;
+using MediDesk.Common.Models;
+using MediDesk.Common.Options;
+using MediDesk.Data;
+using MediDesk.Data.Repositories;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddProblemDetails();
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "MediDesk API", Version = "v1" });
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header
+    });
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" } }] = Array.Empty<string>()
+    });
+});
+
+builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
+builder.Services.Configure<BootstrapAdminOptions>(builder.Configuration.GetSection(BootstrapAdminOptions.SectionName));
+var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
+          ?? throw new InvalidOperationException("JWT configuration is missing.");
+if (Encoding.UTF8.GetByteCount(jwt.SigningKey) < 32)
+    throw new InvalidOperationException("JWT signing key must contain at least 32 bytes.");
+if (string.IsNullOrWhiteSpace(jwt.Issuer) || string.IsNullOrWhiteSpace(jwt.Audience))
+    throw new InvalidOperationException("JWT issuer and audience are required.");
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.MapInboundClaims = false;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwt.Issuer,
+            ValidAudience = jwt.Audience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.SigningKey)),
+            ClockSkew = TimeSpan.FromSeconds(30)
+        };
+    });
+builder.Services.AddAuthorization();
+
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+builder.Services.AddCors(options => options.AddPolicy("frontend", policy =>
+    policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod()));
+builder.Services.AddRateLimiter(options => options.AddFixedWindowLimiter("auth", limiter =>
+{
+    limiter.PermitLimit = 10;
+    limiter.Window = TimeSpan.FromMinutes(1);
+    limiter.QueueLimit = 0;
+    limiter.AutoReplenishment = true;
+}));
+
+var connectionString = builder.Configuration.GetConnectionString("MediDesk");
+if (string.IsNullOrWhiteSpace(connectionString))
+    throw new InvalidOperationException("Database connection string is missing.");
+builder.Services.AddSingleton(new SqlConnectionFactory(connectionString));
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<INavigationService, NavigationService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IPasswordHasher<UserRecord>, PasswordHasher<UserRecord>>();
+builder.Services.AddHostedService<BootstrapAdminService>();
+
+var app = builder.Build();
+app.UseExceptionHandler();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+app.UseHttpsRedirection();
+app.UseCors("frontend");
+app.UseRateLimiter();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
+app.Run();
+
+public partial class Program { }

@@ -1,24 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import ApiState from './components/ApiState'
 import Icon from './components/Icon'
-import { env } from './config/env'
-import { canAccessPage } from './constants/permissions.constants'
 import { PharmacyDataProvider } from './context/PharmacyDataContext'
 import { usePharmacyData } from './hooks/usePharmacyData'
+import { authApi } from './services/auth.api'
 import { Accounts, Compliance, Customers, Dashboard, DataTools, Inventory, Login, Masters, Medicines, Purchases, Reports, Returns, Sales, Schemes, Settings, Stores, Suppliers, UsersRoles } from './features/pages'
 import './App.css'
 
-const navGroups = [
-  { label: 'Workspace', items: [['dashboard', 'Overview', 'dashboard'], ['pill', 'Medicines', 'medicines'], ['box', 'Medicine Masters', 'masters'], ['box', 'Inventory', 'inventory']] },
-  { label: 'Operations', items: [['receipt', 'Purchases', 'purchases'], ['cart', 'Sales & Billing', 'sales'], ['return', 'Returns', 'returns']] },
-  { label: 'Partners', items: [['truck', 'Suppliers', 'suppliers'], ['users', 'Customers', 'customers']] },
-  { label: 'Finance', items: [['receipt', 'Schemes & Discounts', 'schemes'], ['chart', 'Accounts', 'accounts'], ['check', 'GST & Compliance', 'compliance']] },
-  { label: 'Management', items: [['store', 'Stores', 'stores'], ['users', 'Users & Roles', 'users'], ['chart', 'Reports', 'reports']] },
-  { label: 'System', items: [['download', 'Data & Backup', 'data-tools']] },
-]
-
 const pageTitles = { dashboard: 'Overview', medicines: 'Medicines', masters: 'Medicine Masters', inventory: 'Inventory', purchases: 'Purchases', sales: 'Sales & Billing', returns: 'Returns', suppliers: 'Suppliers', customers: 'Customers', schemes: 'Schemes & Discounts', accounts: 'Accounts', compliance: 'GST & Compliance', stores: 'Stores', users: 'Users & Roles', reports: 'Reports', 'data-tools': 'Data & Backup', settings: 'Settings' }
-const searchTargets = Object.entries(pageTitles).map(([key, label]) => ({ key, label, description: `Open ${label} module` }))
 
 function getInitialTheme() {
   const saved = localStorage.getItem('medidesk-theme')
@@ -42,8 +31,17 @@ function AppContent() {
   const [toast, setToast] = useState('')
   const [globalQuery, setGlobalQuery] = useState('')
   const [notificationsOpen, setNotificationsOpen] = useState(false)
-  const [authenticated, setAuthenticated] = useState(() => localStorage.getItem('medidesk-auth') === 'true')
-  const role = env.defaultRole
+  const [session, setSession] = useState(authApi.getSession)
+  const allowedKeys = useMemo(() => new Set((session?.menu || []).filter(item => item.permissions.includes('View')).map(item => item.key)), [session])
+  const navigationGroups = useMemo(() => {
+    const groups = new Map()
+    ;(session?.menu || []).filter(item => item.key !== 'settings' && item.permissions.includes('View')).forEach(item => {
+      if (!groups.has(item.groupName)) groups.set(item.groupName, [])
+      groups.get(item.groupName).push(item)
+    })
+    return [...groups].map(([label, items]) => ({ label, items }))
+  }, [session])
+  const searchTargets = useMemo(() => (session?.menu || []).filter(item => item.permissions.includes('View')).map(item => ({ key: item.key, label: item.label, description: `Open ${item.label} module` })), [session])
 
   useEffect(() => {
     const onHashChange = () => setPage(window.location.hash.slice(1) || 'dashboard')
@@ -52,6 +50,15 @@ function AppContent() {
   }, [])
 
   useEffect(() => { document.documentElement.dataset.theme = theme }, [theme])
+  useEffect(() => {
+    if (!session?.accessToken) return undefined
+    let active = true
+    authApi.getNavigation(session.accessToken).then(menu => {
+      if (!active) return
+      setSession(current => current ? authApi.saveSession({ ...current, menu }) : current)
+    }).catch(() => {})
+    return () => { active = false }
+  }, [session?.accessToken])
   useEffect(() => {
     if (!toast) return undefined
     const timer = window.setTimeout(() => setToast(''), 2800)
@@ -71,8 +78,12 @@ function AppContent() {
   }
 
   const showToast = (message) => setToast(message)
-  const login = () => { localStorage.setItem('medidesk-auth', 'true'); setAuthenticated(true); navigate('dashboard') }
-  const logout = () => { localStorage.removeItem('medidesk-auth'); setAuthenticated(false); navigate('login') }
+  const authenticate = async (credentials, mode = 'login') => {
+    const nextSession = await authApi[mode](credentials)
+    setSession(nextSession)
+    navigate('dashboard')
+  }
+  const logout = () => { authApi.clearSession(); setSession(null); navigate('login') }
   const commonProps = { navigate, showToast, theme, setTheme }
   const pages = {
     dashboard: <Dashboard {...commonProps} />,
@@ -94,7 +105,7 @@ function AppContent() {
     settings: <Settings {...commonProps} />,
   }
 
-  if (!authenticated || page === 'login') return <Login theme={theme} setTheme={setTheme} onLogin={login} />
+  if (!session || page === 'login') return <Login theme={theme} setTheme={setTheme} onLogin={(values) => authenticate(values)} onSignup={(values) => authenticate(values, 'signup')} />
 
   return (
     <div className="app-shell">
@@ -102,18 +113,18 @@ function AppContent() {
       <aside className={`sidebar ${sidebarOpen ? 'sidebar--open' : ''}`}>
         <button className="brand" onClick={() => navigate('dashboard')}><span className="brand__mark"><Icon name="pill" size={20}/></span><span><b>MediDesk</b><small>Pharmacy ERP</small></span></button>
         <nav>
-          {navGroups.map((group) => { const allowedItems = group.items.filter(([, , key]) => canAccessPage(role, key)); return allowedItems.length ? <div className="nav-group" key={group.label}><span className="nav-label">{group.label}</span>{allowedItems.map(([icon,label,key]) => <button key={key} className={page === key ? 'active' : ''} onClick={() => navigate(key)}><Icon name={icon} size={19}/><span>{label}</span></button>)}</div> : null })}
+          {navigationGroups.map((group) => <div className="nav-group" key={group.label}><span className="nav-label">{group.label}</span>{group.items.map((item) => <button key={item.key} className={page === item.key ? 'active' : ''} onClick={() => navigate(item.key)}><Icon name={item.icon} size={19}/><span>{item.label}</span></button>)}</div>)}
         </nav>
-        <div className="sidebar-bottom"><button className={page === 'settings' ? 'active' : ''} onClick={() => navigate('settings')}><Icon name="settings" size={19}/><span>Settings</span></button><div className="sidebar-status"><i></i><span><b>Store online</b><small>Last synced just now</small></span></div></div>
+        <div className="sidebar-bottom">{allowedKeys.has('settings') && <button className={page === 'settings' ? 'active' : ''} onClick={() => navigate('settings')}><Icon name="settings" size={19}/><span>Settings</span></button>}<div className="sidebar-status"><i></i><span><b>Store online</b><small>Last synced just now</small></span></div></div>
       </aside>
       <div className="app-body">
         <header className="topbar">
           <button className="mobile-menu icon-button" aria-label="Open navigation" onClick={() => setSidebarOpen(true)}><Icon name="menu"/></button>
           <div className="breadcrumb"><span>Ali Medical Store</span><b>/</b><strong>{pageTitles[page] || 'Overview'}</strong></div>
           <div className="global-search-wrap"><label className="global-search"><Icon name="search" size={18}/><input value={globalQuery} onChange={(e) => setGlobalQuery(e.target.value)} placeholder="Search modules and records"/><kbd>⌘ K</kbd></label>{globalQuery && <div className="global-results">{searchTargets.filter(item => item.label.toLowerCase().includes(globalQuery.toLowerCase())).map(item => <button key={item.key} onClick={() => { navigate(item.key); setGlobalQuery('') }}><Icon name="search" size={15}/><span><b>{item.label}</b><small>{item.description}</small></span></button>)}{!searchTargets.some(item => item.label.toLowerCase().includes(globalQuery.toLowerCase())) && <p>No matching module found</p>}</div>}</div>
-          <div className="topbar-actions"><button className="icon-button" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} aria-label="Toggle theme"><Icon name={theme === 'light' ? 'moon' : 'sun'} size={19}/></button><div className="notification-wrap"><button className="icon-button notification" aria-label="Notifications" onClick={() => setNotificationsOpen(!notificationsOpen)}><Icon name="bell" size={19}/><i></i></button>{notificationsOpen && <div className="notification-menu"><div><b>Notifications</b><button onClick={() => { setNotificationsOpen(false); showToast('All notifications marked as read') }}>Mark all read</button></div><button onClick={() => { navigate('inventory'); setNotificationsOpen(false) }}><span className="alert-dot"><Icon name="alert" size={14}/></span><span><b>Stock level alerts</b><small>Review reorder levels</small></span></button><button onClick={() => { navigate('inventory'); setNotificationsOpen(false) }}><span className="alert-dot warning"><Icon name="pill" size={14}/></span><span><b>Batch expiry alerts</b><small>Review current inventory</small></span></button></div>}</div><button className="profile" onClick={logout} title="Sign out"><span>A</span><div><b>Ali</b><small>{role.replace('_', ' ')}</small></div><span className="profile-chevron">⌄</span></button></div>
+          <div className="topbar-actions"><button className="icon-button" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} aria-label="Toggle theme"><Icon name={theme === 'light' ? 'moon' : 'sun'} size={19}/></button><div className="notification-wrap"><button className="icon-button notification" aria-label="Notifications" onClick={() => setNotificationsOpen(!notificationsOpen)}><Icon name="bell" size={19}/><i></i></button>{notificationsOpen && <div className="notification-menu"><div><b>Notifications</b><button onClick={() => { setNotificationsOpen(false); showToast('All notifications marked as read') }}>Mark all read</button></div><button onClick={() => { navigate('inventory'); setNotificationsOpen(false) }}><span className="alert-dot"><Icon name="alert" size={14}/></span><span><b>Stock level alerts</b><small>Review reorder levels</small></span></button><button onClick={() => { navigate('inventory'); setNotificationsOpen(false) }}><span className="alert-dot warning"><Icon name="pill" size={14}/></span><span><b>Batch expiry alerts</b><small>Review current inventory</small></span></button></div>}</div><button className="profile" onClick={logout} title="Sign out"><span>{session.user.fullName[0]}</span><div><b>{session.user.fullName}</b><small>{session.user.role}</small></div><span className="profile-chevron">⌄</span></button></div>
         </header>
-        <main className="main-content"><WorkspaceData>{pages[page] ? (canAccessPage(role, page) || page === 'settings' ? pages[page] : <NotFound navigate={navigate} denied/>) : <NotFound navigate={navigate}/>}</WorkspaceData></main>
+        <main className="main-content"><WorkspaceData>{pages[page] ? (allowedKeys.has(page) ? pages[page] : <NotFound navigate={navigate} denied/>) : <NotFound navigate={navigate}/>}</WorkspaceData></main>
       </div>
       {toast && <div className="toast"><span><Icon name="check" size={16}/></span>{toast}</div>}
     </div>

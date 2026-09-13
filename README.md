@@ -16,11 +16,11 @@ All browser environment variables use the `VITE_` prefix. Development data comes
 
 ```env
 VITE_API_BASE_URL=https://dummyjson.com
+VITE_BACKEND_API_BASE_URL=http://localhost:5182/api
 VITE_API_TIMEOUT_MS=12000
 VITE_API_RETRY_COUNT=1
 VITE_APP_NAME=MediDesk
 VITE_APP_ENV=development
-VITE_DEFAULT_ROLE=administrator
 ```
 
 Never commit `.env`. Add new keys to `.env.example` with safe placeholder values.
@@ -33,11 +33,11 @@ src/
   config/       Validated environment configuration
   constants/    API endpoints, HTTP methods and static keys
   context/      Shared API-backed application state
-  features/     Module-grouped pharmacy screens
   hooks/        Reusable React hooks
   services/     Generic HTTP client and business API methods
   utils/        API response-to-UI model mappers
-  App.jsx       Application shell and routing
+  features/     Module-wise screens
+  App.jsx       Application shell and permission-aware routing
 ```
 
 ## Data flow
@@ -45,6 +45,10 @@ src/
 Screens consume `usePharmacyData`. The provider calls `pharmacy.api.js`, which uses the generic client and endpoint constants. Loading, retry and error states are handled centrally.
 
 CRUD business methods are available for medicine, partner and transaction operations. DummyJSON simulates writes but does not persist them; the service interface can be pointed to the future .NET backend.
+
+## .NET authentication backend
+
+The production-layered .NET 8 solution is under `backend/`. Login, signup, JWT authentication and database-driven sidebar permissions are connected to the React application through `VITE_BACKEND_API_BASE_URL`. See `backend/README.md` for SQL Server setup and secure configuration.
 
 ## Quality checks
 

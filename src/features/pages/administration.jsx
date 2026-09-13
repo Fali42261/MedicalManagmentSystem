@@ -19,15 +19,33 @@ export function DataTools({ showToast }) {
   const finish = (message) => { setTool(''); showToast(message) }
   return <><PageHeader title="Data & Backup" description="Protect store data and move records safely."><Button icon="download" onClick={()=>showToast('Backup created successfully')}>Create backup</Button></PageHeader><div className="data-cards"><div><span className="data-icon"><Icon name="box"/></span><div><b>Cloud backup</b><p>Automatic encrypted backup every day at 11:30 PM.</p><Badge tone="success">Up to date</Badge></div><Button variant="secondary" onClick={() => setTool('backup')}>Configure</Button></div><div><span className="data-icon"><Icon name="download"/></span><div><b>Import data</b><p>Import medicine, supplier and opening stock data from Excel.</p><small>XLSX and CSV supported</small></div><Button variant="secondary" onClick={() => setTool('import')}>Start import</Button></div><div><span className="data-icon"><Icon name="return"/></span><div><b>Export business data</b><p>Download master and transaction records for archiving.</p><small>Excel or JSON format</small></div><Button variant="secondary" onClick={() => setTool('export')}>Export data</Button></div><div><span className="data-icon"><Icon name="alert"/></span><div><b>Audit trail</b><p>Review edits, deleted records and operator activity.</p><small>{backups.length} recent API events</small></div><Button variant="secondary" onClick={() => setTool('audit')}>View activity</Button></div></div>{tool && <Panel title={{backup:'Backup schedule',import:'Import business data',export:'Export business data',audit:'Recent audit activity'}[tool]} className="inline-form-panel" action={<button className="text-button" onClick={() => setTool('')}>Close</button>}>{tool === 'audit' ? <DataTable headers={['Time','User','Module','Action']}>{backups.map(item => <tr key={item.id}><td>{item.created}</td><td>{item.createdBy}</td><td>Data</td><td>{item.type} backup completed</td></tr>)}</DataTable> : <form className="workflow-form" onSubmit={(e) => { e.preventDefault(); finish(tool === 'backup' ? 'Backup schedule updated' : tool === 'import' ? 'Import file validated successfully' : 'Business data export prepared') }}>{tool === 'backup' ? <><label>Frequency<select><option>Daily</option><option>Weekly</option></select></label><label>Backup time<input type="time" defaultValue="23:30"/></label></> : tool === 'import' ? <><label>Data type<select><option>Medicine master</option><option>Suppliers</option><option>Opening stock</option></select></label><label>File<input required type="file" accept=".xlsx,.csv"/></label></> : <><label>Data set<select><option>All business data</option><option>Masters only</option><option>Transactions only</option></select></label><label>Format<select><option>Excel</option><option>JSON</option></select></label></>}<Button type="submit" icon="check">Continue</Button></form>}</Panel>}<Panel title="Backup history"><DataTable headers={['Backup','Created','Type','Size','Created by','Status','']}>{backups.map(item => <tr key={item.id}><td><b>{item.id}</b></td><td>{item.created}</td><td>{item.type}</td><td>{item.size}</td><td>{item.createdBy}</td><td><Badge tone="success">{item.status}</Badge></td><td><button className="text-button" onClick={() => showToast('Backup download started')}>Download</button></td></tr>)}</DataTable></Panel></>
 }
-export function Login({ onLogin, theme, setTheme }) {
-  const [resetSent, setResetSent] = useState(false)
+export function Login({ onLogin, onSignup, theme, setTheme }) {
+  const [mode, setMode] = useState('login')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const submit = async (event) => {
+    event.preventDefault()
+    setError('')
+    const values = Object.fromEntries(new FormData(event.currentTarget).entries())
+    if (mode === 'signup' && values.password !== values.confirmPassword) return setError('Passwords do not match.')
+    setBusy(true)
+    try {
+      if (mode === 'signup') await onSignup({ fullName: values.fullName, email: values.email, password: values.password })
+      else await onLogin({ email: values.email, password: values.password })
+    } catch (requestError) {
+      setError(requestError.message)
+    } finally {
+      setBusy(false)
+    }
+  }
   return (
     <div className="login-page">
       <div className="login-brand"><span className="brand__mark"><Icon name="pill" size={22}/></span><b>MediDesk</b><small>Smart pharmacy operations, simplified.</small></div>
       <div className="login-card">
-        <div className="login-heading"><div><span>Welcome back</span><h1>Sign in to your store</h1><p>Enter your credentials to continue to MediDesk.</p></div><button className="icon-button" aria-label="Toggle theme" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}><Icon name={theme === 'light' ? 'moon' : 'sun'} size={19}/></button></div>
-        <form onSubmit={(e) => { e.preventDefault(); onLogin() }}><label>Email or username<input required defaultValue="admin@alimedical.in"/></label><label>Password<input required type="password" defaultValue="password"/></label><div className="login-options"><label><input type="checkbox" defaultChecked/> Remember me</label><button type="button" onClick={() => setResetSent(true)}>Forgot password?</button></div><Button type="submit">Sign in</Button></form>
-        <p className="demo-note">{resetSent ? 'Password reset instructions sent to the registered email.' : 'Demo access is pre-filled — click Sign in to continue.'}</p>
+        <div className="login-heading"><div><span>{mode === 'login' ? 'Welcome back' : 'Create account'}</span><h1>{mode === 'login' ? 'Sign in to your store' : 'Set up your access'}</h1><p>{mode === 'login' ? 'Enter your credentials to continue to MediDesk.' : 'New accounts receive billing access until an administrator changes the role.'}</p></div><button className="icon-button" aria-label="Toggle theme" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}><Icon name={theme === 'light' ? 'moon' : 'sun'} size={19}/></button></div>
+        <div className="auth-switch"><button type="button" className={mode === 'login' ? 'active' : ''} onClick={() => { setMode('login'); setError('') }}>Sign in</button><button type="button" className={mode === 'signup' ? 'active' : ''} onClick={() => { setMode('signup'); setError('') }}>Sign up</button></div>
+        <form onSubmit={submit}>{mode === 'signup' && <label>Full name<input name="fullName" required minLength="2" autoComplete="name" placeholder="Your full name"/></label>}<label>Email address<input name="email" required type="email" autoComplete="email" placeholder="you@medicalstore.in"/></label><label>Password<input name="password" required minLength="8" maxLength="128" type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} placeholder="Minimum 8 characters"/></label>{mode === 'signup' && <label>Confirm password<input name="confirmPassword" required minLength="8" type="password" autoComplete="new-password" placeholder="Repeat password"/></label>}{error && <p className="form-error" role="alert">{error}</p>}<Button type="submit" disabled={busy}>{busy ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create account'}</Button></form>
+        <p className="demo-note">Authentication and menu permissions are loaded securely from the MediDesk API.</p>
       </div>
       <footer>© 2026 MediDesk · Secure pharmacy management</footer>
     </div>

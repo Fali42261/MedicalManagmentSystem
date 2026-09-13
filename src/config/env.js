@@ -6,9 +6,9 @@ const required = (key, fallback) => {
 
 export const env = Object.freeze({
   apiBaseUrl: required('VITE_API_BASE_URL'),
+  backendApiBaseUrl: required('VITE_BACKEND_API_BASE_URL', 'http://localhost:5182/api').replace(/\/+$/, ''),
   apiTimeoutMs: Number(required('VITE_API_TIMEOUT_MS', '12000')),
   apiRetryCount: Number(required('VITE_API_RETRY_COUNT', '1')),
   appName: required('VITE_APP_NAME', 'MediDesk'),
   appEnvironment: required('VITE_APP_ENV', 'development'),
-  defaultRole: required('VITE_DEFAULT_ROLE', 'administrator'),
 })
