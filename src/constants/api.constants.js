@@ -30,6 +30,9 @@ export const BACKEND_API_ENDPOINTS = Object.freeze({
   SUPPLIER_BY_ID: (id) => `/suppliers/${id}`,
   PURCHASES: '/purchases',
   PURCHASE_BY_ID: (id) => `/purchases/${id}`,
+  SALES: '/sales',
+  SALES_CATALOG: '/sales/catalog',
+  SALE_BY_ID: (id) => `/sales/${id}`,
 })
 
 export const API_QUERY = Object.freeze({

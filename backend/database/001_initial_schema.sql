@@ -231,6 +231,71 @@ BEGIN
     CREATE INDEX IX_PurchaseItems_Medicine ON dbo.PurchaseItems(MedicineId, PurchaseId) WHERE IsDeleted=0;
 END;
 
+IF OBJECT_ID('dbo.Sales', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Sales (
+        Id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Sales PRIMARY KEY,
+        CustomerName NVARCHAR(160) NULL,
+        CustomerPhone NVARCHAR(18) NULL,
+        GrossAmount DECIMAL(18,2) NOT NULL,
+        DiscountTotal DECIMAL(18,2) NOT NULL,
+        TaxableAmount DECIMAL(18,2) NOT NULL,
+        TaxTotal DECIMAL(18,2) NOT NULL,
+        GrandTotal DECIMAL(18,2) NOT NULL,
+        AmountReceived DECIMAL(18,2) NOT NULL,
+        AmountDue DECIMAL(18,2) NOT NULL,
+        ChangeAmount DECIMAL(18,2) NOT NULL,
+        PaymentMethod NVARCHAR(20) NOT NULL,
+        PaymentStatus NVARCHAR(20) NOT NULL,
+        Status NVARCHAR(20) NOT NULL CONSTRAINT DF_Sales_Status DEFAULT ('Completed'),
+        Notes NVARCHAR(500) NULL,
+        IsDeleted BIT NOT NULL CONSTRAINT DF_Sales_IsDeleted DEFAULT (0),
+        CreatedByUserId BIGINT NOT NULL,
+        CreatedAtUtc DATETIME2 NOT NULL CONSTRAINT DF_Sales_Created DEFAULT (SYSUTCDATETIME()),
+        UpdatedByUserId BIGINT NULL,
+        UpdatedAtUtc DATETIME2 NULL,
+        CancelledByUserId BIGINT NULL,
+        CancelledAtUtc DATETIME2 NULL,
+        RowVersion ROWVERSION NOT NULL,
+        CONSTRAINT FK_Sales_CreatedBy FOREIGN KEY (CreatedByUserId) REFERENCES dbo.Users(Id),
+        CONSTRAINT FK_Sales_UpdatedBy FOREIGN KEY (UpdatedByUserId) REFERENCES dbo.Users(Id),
+        CONSTRAINT FK_Sales_CancelledBy FOREIGN KEY (CancelledByUserId) REFERENCES dbo.Users(Id),
+        CONSTRAINT CK_Sales_Amounts CHECK (GrossAmount >= 0 AND DiscountTotal >= 0 AND TaxableAmount >= 0 AND TaxTotal >= 0 AND GrandTotal >= 0 AND AmountReceived >= 0 AND AmountDue >= 0 AND ChangeAmount >= 0 AND GrossAmount - DiscountTotal = GrandTotal AND TaxableAmount + TaxTotal = GrandTotal),
+        CONSTRAINT CK_Sales_Settlement CHECK ((PaymentStatus='Credit' AND AmountReceived=0 AND AmountDue=GrandTotal AND ChangeAmount=0) OR (PaymentStatus='Paid' AND AmountDue=0 AND AmountReceived=GrandTotal+ChangeAmount)),
+        CONSTRAINT CK_Sales_PaymentMethod CHECK (PaymentMethod IN ('Cash','UPI','Card','Credit')),
+        CONSTRAINT CK_Sales_PaymentStatus CHECK (PaymentStatus IN ('Paid','Credit')),
+        CONSTRAINT CK_Sales_Status CHECK (Status IN ('Completed','Cancelled'))
+    );
+    CREATE INDEX IX_Sales_Date ON dbo.Sales(CreatedAtUtc DESC, Id DESC) INCLUDE (CustomerName, GrandTotal, PaymentMethod) WHERE IsDeleted=0;
+    CREATE INDEX IX_Sales_CustomerPhone ON dbo.Sales(CustomerPhone, CreatedAtUtc DESC) WHERE CustomerPhone IS NOT NULL AND IsDeleted=0;
+END;
+
+IF OBJECT_ID('dbo.SaleItems', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.SaleItems (
+        Id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_SaleItems PRIMARY KEY,
+        SaleId BIGINT NOT NULL,
+        MedicineId BIGINT NOT NULL,
+        MedicineName NVARCHAR(160) NOT NULL,
+        GenericName NVARCHAR(160) NOT NULL,
+        BatchNumber NVARCHAR(80) NOT NULL,
+        ExpiryDate DATE NOT NULL,
+        Quantity INT NOT NULL,
+        UnitPrice DECIMAL(18,2) NOT NULL,
+        GstRate DECIMAL(5,2) NOT NULL,
+        DiscountAmount DECIMAL(18,2) NOT NULL CONSTRAINT DF_SaleItems_Discount DEFAULT (0),
+        TaxableAmount DECIMAL(18,2) NOT NULL,
+        TaxAmount DECIMAL(18,2) NOT NULL,
+        LineTotal DECIMAL(18,2) NOT NULL,
+        IsDeleted BIT NOT NULL CONSTRAINT DF_SaleItems_IsDeleted DEFAULT (0),
+        CONSTRAINT FK_SaleItems_Sales FOREIGN KEY (SaleId) REFERENCES dbo.Sales(Id),
+        CONSTRAINT FK_SaleItems_Medicines FOREIGN KEY (MedicineId) REFERENCES dbo.Medicines(Id),
+        CONSTRAINT CK_SaleItems_Values CHECK (Quantity > 0 AND UnitPrice >= 0 AND GstRate >= 0 AND GstRate <= 100 AND DiscountAmount >= 0 AND TaxableAmount >= 0 AND TaxAmount >= 0 AND LineTotal >= 0)
+    );
+    CREATE UNIQUE INDEX UX_SaleItems_SaleMedicine_Active ON dbo.SaleItems(SaleId, MedicineId) WHERE IsDeleted=0;
+    CREATE INDEX IX_SaleItems_Medicine ON dbo.SaleItems(MedicineId, SaleId) WHERE IsDeleted=0;
+END;
+
 MERGE dbo.Roles AS target
 USING (VALUES
     ('Administrator', 1), ('Billing Operator', 1),

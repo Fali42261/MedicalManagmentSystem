@@ -106,3 +106,15 @@ The bootstrap credentials only create the first administrator when that email do
 - Cancellation is rejected when received stock has already been consumed or the supplier balance cannot be reversed safely.
 - Cancelled purchases remain in the database for audit but are excluded from API lists and the UI.
 - Purchase View/Add/Delete permissions are checked against the database for every request.
+
+### Step 6 — Sales & Billing
+
+- `GET /api/sales/catalog` provides Billing Operators a sale-authorized medicine/batch catalogue without exposing the Medicines module.
+- `GET /api/sales` supports invoice/customer search, payment-method filtering and pagination.
+- `GET /api/sales/{id}` returns the invoice header and immutable medicine-batch snapshots.
+- `POST /api/sales` validates live stock and expiry, reads prices/GST from the database and calculates GST-inclusive totals server-side.
+- Invoice creation, stock deduction and inventory-ledger entries run in one serializable SQL transaction.
+- Cash, UPI, card and identified-customer credit sales are supported. UPI/card payments must match the invoice total; cash change is recorded.
+- `DELETE /api/sales/{id}` restores stock transactionally, sets invoice/item `IsDeleted=1` and marks the invoice cancelled.
+- Cancelled invoices remain in the database for audit but are excluded from API lists and the UI.
+- Sales View/Add/Delete permissions are checked against the database for every request.
