@@ -1,6 +1,7 @@
 using System.Text;
 using System.Threading.RateLimiting;
 using MediDesk.Api.Services;
+using MediDesk.Api.Authorization;
 using MediDesk.Business.Interfaces;
 using MediDesk.Business.Services;
 using MediDesk.Common.Models;
@@ -9,12 +10,14 @@ using MediDesk.Data;
 using MediDesk.Data.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddProblemDetails();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -59,7 +62,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ClockSkew = TimeSpan.FromSeconds(30)
         };
     });
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(PermissionPolicies.MedicinesView, policy => policy.AddRequirements(new PermissionRequirement("medicines", "View")));
+    options.AddPolicy(PermissionPolicies.MedicinesAdd, policy => policy.AddRequirements(new PermissionRequirement("medicines", "Add")));
+    options.AddPolicy(PermissionPolicies.MedicinesEdit, policy => policy.AddRequirements(new PermissionRequirement("medicines", "Edit")));
+    options.AddPolicy(PermissionPolicies.MedicinesDelete, policy => policy.AddRequirements(new PermissionRequirement("medicines", "Delete")));
+});
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(options => options.AddPolicy("frontend", policy =>
@@ -77,9 +86,13 @@ if (string.IsNullOrWhiteSpace(connectionString))
     throw new InvalidOperationException("Database connection string is missing.");
 builder.Services.AddSingleton(new SqlConnectionFactory(connectionString));
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IPermissionRepository, PermissionRepository>();
+builder.Services.AddScoped<IMedicineRepository, MedicineRepository>();
 builder.Services.AddScoped<INavigationService, NavigationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IMedicineService, MedicineService>();
 builder.Services.AddScoped<IPasswordHasher<UserRecord>, PasswordHasher<UserRecord>>();
+builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 builder.Services.AddHostedService<BootstrapAdminService>();
 
 var app = builder.Build();

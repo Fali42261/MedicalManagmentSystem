@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { pharmacyApi } from '../services/pharmacy.api'
+import { authApi } from '../services/auth.api'
+import { medicineApi } from '../services/medicine.api'
 import { mapApiData } from '../utils/apiMappers'
 import { PharmacyDataContext } from './pharmacyData.context'
 
@@ -9,16 +11,19 @@ export function PharmacyDataProvider({ children }) {
   const load = useCallback(async () => {
     setState(current => ({ ...current, loading: true, error: '' }))
     try {
-      const [products, users, carts, todos] = await Promise.all([
+      const [products, users, carts, todos, medicines] = await Promise.all([
         pharmacyApi.getProducts(),
         pharmacyApi.getUsers(),
         pharmacyApi.getCarts(),
         pharmacyApi.getTodos(),
+        authApi.getSession() ? medicineApi.getAll() : Promise.resolve(null),
       ])
+      const mapped = mapApiData({ products: products.products, users: users.users, carts: carts.carts, todos: todos.todos })
+      if (medicines) mapped.medicines = medicines
       setState({
         loading: false,
         error: '',
-        data: mapApiData({ products: products.products, users: users.users, carts: carts.carts, todos: todos.todos }),
+        data: mapped,
       })
     } catch (error) {
       setState({ data: null, loading: false, error: error.message || 'Unable to load business data' })
@@ -35,19 +40,19 @@ export function PharmacyDataProvider({ children }) {
   }, [])
 
   const createMedicine = useCallback(async (payload) => {
-    const created = await pharmacyApi.addMedicine({ title: payload.name, price: payload.sale, stock: payload.stock, category: payload.category })
-    const medicine = { ...payload, id: created.id, status: payload.stock <= payload.minStock ? 'Low stock' : 'In stock' }
+    const medicine = await medicineApi.create(payload)
     updateCollection('medicines', rows => [medicine, ...rows])
     return medicine
   }, [updateCollection])
 
   const updateMedicine = useCallback(async (id, payload) => {
-    await pharmacyApi.editMedicine(id, { title: payload.name, price: payload.sale, stock: payload.stock })
-    updateCollection('medicines', rows => rows.map(row => row.id === id ? { ...row, ...payload, status: payload.stock <= payload.minStock ? 'Low stock' : row.status } : row))
+    const medicine = await medicineApi.update(id, payload)
+    updateCollection('medicines', rows => rows.map(row => row.id === id ? medicine : row))
+    return medicine
   }, [updateCollection])
 
   const deleteMedicine = useCallback(async (id) => {
-    await pharmacyApi.deleteMedicine(id)
+    await medicineApi.delete(id)
     updateCollection('medicines', rows => rows.filter(row => row.id !== id))
   }, [updateCollection])
 

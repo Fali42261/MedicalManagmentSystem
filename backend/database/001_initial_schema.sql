@@ -61,6 +61,40 @@ BEGIN
     );
 END;
 
+IF OBJECT_ID('dbo.Medicines', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Medicines (
+        Id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Medicines PRIMARY KEY,
+        Name NVARCHAR(160) NOT NULL,
+        GenericName NVARCHAR(160) NOT NULL,
+        Category NVARCHAR(80) NOT NULL,
+        Manufacturer NVARCHAR(160) NOT NULL CONSTRAINT DF_Medicines_Manufacturer DEFAULT (''),
+        DosageForm NVARCHAR(40) NOT NULL CONSTRAINT DF_Medicines_DosageForm DEFAULT (''),
+        Strength NVARCHAR(40) NOT NULL CONSTRAINT DF_Medicines_Strength DEFAULT (''),
+        BatchNumber NVARCHAR(80) NOT NULL,
+        ExpiryDate DATE NOT NULL,
+        PurchasePrice DECIMAL(18,2) NOT NULL,
+        SalePrice DECIMAL(18,2) NOT NULL,
+        Stock INT NOT NULL,
+        MinimumStock INT NOT NULL,
+        GstRate DECIMAL(5,2) NOT NULL,
+        RackNumber NVARCHAR(40) NOT NULL CONSTRAINT DF_Medicines_Rack DEFAULT (''),
+        IsDeleted BIT NOT NULL CONSTRAINT DF_Medicines_IsDeleted DEFAULT (0),
+        CreatedByUserId BIGINT NOT NULL,
+        CreatedAtUtc DATETIME2 NOT NULL CONSTRAINT DF_Medicines_Created DEFAULT (SYSUTCDATETIME()),
+        UpdatedByUserId BIGINT NULL,
+        UpdatedAtUtc DATETIME2 NULL,
+        RowVersion ROWVERSION NOT NULL,
+        CONSTRAINT FK_Medicines_CreatedBy FOREIGN KEY (CreatedByUserId) REFERENCES dbo.Users(Id),
+        CONSTRAINT FK_Medicines_UpdatedBy FOREIGN KEY (UpdatedByUserId) REFERENCES dbo.Users(Id),
+        CONSTRAINT CK_Medicines_Prices CHECK (PurchasePrice >= 0 AND SalePrice >= PurchasePrice),
+        CONSTRAINT CK_Medicines_Stock CHECK (Stock >= 0 AND MinimumStock >= 0),
+        CONSTRAINT CK_Medicines_Gst CHECK (GstRate >= 0 AND GstRate <= 100)
+    );
+    CREATE UNIQUE INDEX UX_Medicines_Batch_Active ON dbo.Medicines(BatchNumber) WHERE IsDeleted=0;
+    CREATE INDEX IX_Medicines_Search ON dbo.Medicines(Name, GenericName) INCLUDE (Category, Stock, MinimumStock, ExpiryDate) WHERE IsDeleted=0;
+END;
+
 MERGE dbo.Roles AS target
 USING (VALUES
     ('Administrator', 1), ('Billing Operator', 1),

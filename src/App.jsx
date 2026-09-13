@@ -25,6 +25,7 @@ function NotFound({ navigate, denied = false }) {
 }
 
 function AppContent() {
+  const { reload } = usePharmacyData()
   const [page, setPage] = useState(() => window.location.hash.slice(1) || 'dashboard')
   const [theme, setThemeState] = useState(getInitialTheme)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -53,7 +54,7 @@ function AppContent() {
   useEffect(() => {
     if (!session?.accessToken) return undefined
     let active = true
-    authApi.getNavigation(session.accessToken).then(menu => {
+    authApi.getNavigation().then(menu => {
       if (!active) return
       setSession(current => current ? authApi.saveSession({ ...current, menu }) : current)
     }).catch(() => {})
@@ -81,13 +82,14 @@ function AppContent() {
   const authenticate = async (credentials, mode = 'login') => {
     const nextSession = await authApi[mode](credentials)
     setSession(nextSession)
+    await reload()
     navigate('dashboard')
   }
   const logout = () => { authApi.clearSession(); setSession(null); navigate('login') }
   const commonProps = { navigate, showToast, theme, setTheme }
   const pages = {
     dashboard: <Dashboard {...commonProps} />,
-    medicines: <Medicines {...commonProps} />,
+    medicines: <Medicines {...commonProps} permissions={new Set(session?.menu?.find(item => item.key === 'medicines')?.permissions || [])} />,
     masters: <Masters {...commonProps} />,
     inventory: <Inventory {...commonProps} />,
     purchases: <Purchases {...commonProps} />,

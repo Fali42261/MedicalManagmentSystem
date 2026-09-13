@@ -7,10 +7,6 @@ export const pharmacyApi = Object.freeze({
   getCarts: () => apiClient.get(API_ENDPOINTS.CARTS, { limit: API_QUERY.TRANSACTION_LIMIT }),
   getTodos: () => apiClient.get(API_ENDPOINTS.TODOS, { limit: API_QUERY.TRANSACTION_LIMIT }),
 
-  addMedicine: (payload) => apiClient.add(`${API_ENDPOINTS.PRODUCTS}/add`, payload),
-  editMedicine: (id, payload) => apiClient.edit(API_ENDPOINTS.PRODUCT_BY_ID(id), payload),
-  deleteMedicine: (id) => apiClient.delete(API_ENDPOINTS.PRODUCT_BY_ID(id)),
-
   addPartner: (payload) => apiClient.add(`${API_ENDPOINTS.USERS}/add`, payload),
   editPartner: (id, payload) => apiClient.edit(API_ENDPOINTS.USER_BY_ID(id), payload),
   deletePartner: (id) => apiClient.delete(API_ENDPOINTS.USER_BY_ID(id)),

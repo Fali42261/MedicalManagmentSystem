@@ -8,7 +8,6 @@ export const HTTP_METHODS = Object.freeze({
 
 export const API_ENDPOINTS = Object.freeze({
   PRODUCTS: '/products',
-  PRODUCT_BY_ID: (id) => `/products/${id}`,
   USERS: '/users',
   USER_BY_ID: (id) => `/users/${id}`,
   CARTS: '/carts',

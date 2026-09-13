@@ -53,7 +53,7 @@ export function Dashboard({ navigate }) {
     </>
   )
 }
-export function Medicines({ showToast }) {
+export function Medicines({ showToast, permissions }) {
   const { data: { medicines }, mutations } = usePharmacyData()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('All status')
@@ -65,11 +65,11 @@ export function Medicines({ showToast }) {
   const table = useTableControls(visible, { pageSize: 6, initialSort: 'name' })
   return (
     <>
-      <PageHeader title="Medicines" description="Manage medicine master, batches, pricing and tax information."><Button icon="plus" onClick={() => setShowModal(true)}>Add medicine</Button></PageHeader>
+      <PageHeader title="Medicines" description="Manage medicine master, batches, pricing and tax information.">{permissions.has('Add') && <Button icon="plus" onClick={() => setShowModal(true)}>Add medicine</Button>}</PageHeader>
       <Panel title="Medicine master" action={<Badge>{visible.length} medicines</Badge>}>
         <div className="toolbar"><SearchBox value={search} onChange={setSearch} placeholder="Search medicine, generic name or batch..."/><select value={status} onChange={(e) => setStatus(e.target.value)}><option>All status</option><option>In stock</option><option>Low stock</option><option>Expiring</option></select><Button variant="secondary" icon="filter" onClick={() => showToast('Medicine filters applied')}>Filters</Button></div>
         <DataTable headers={[sortable('Medicine','name',table),sortable('Category','category',table),'Batch / Expiry',sortable('Stock','stock',table),'Purchase',sortable('Sale','sale',table),'Rack',sortable('Status','status',table),'']}>
-          {table.pageRows.map((item) => <tr key={item.id}><td><div className="medicine-cell"><span><Icon name="pill" size={17}/></span><div><b>{item.name}</b><small>{item.generic}</small></div></div></td><td>{item.category}</td><td><b>{item.batch}</b><small>{item.expiry}</small></td><td><b className={item.stock < item.minStock ? 'danger-text' : ''}>{item.stock}</b><small>Min. {item.minStock}</small></td><td>{money(item.purchase)}</td><td><b>{money(item.sale)}</b></td><td>{item.rack}</td><td><Badge tone={item.status === 'In stock' ? 'success' : item.status === 'Expiring' ? 'warning' : 'danger'}>{item.status}</Badge></td><td><div className="row-actions"><button className="icon-button" aria-label={`Edit ${item.name}`} onClick={() => setEditMedicine(item)}><Icon name="edit" size={17}/></button><button className="icon-button danger-text" aria-label={`Delete ${item.name}`} onClick={() => setDeleteTarget(item)}><Icon name="trash" size={16}/></button></div></td></tr>)}
+          {table.pageRows.map((item) => <tr key={item.id}><td><div className="medicine-cell"><span><Icon name="pill" size={17}/></span><div><b>{item.name}</b><small>{item.generic}</small></div></div></td><td>{item.category}</td><td><b>{item.batch}</b><small>{item.expiry}</small></td><td><b className={item.stock < item.minStock ? 'danger-text' : ''}>{item.stock}</b><small>Min. {item.minStock}</small></td><td>{money(item.purchase)}</td><td><b>{money(item.sale)}</b></td><td>{item.rack}</td><td><Badge tone={item.status === 'In stock' ? 'success' : item.status === 'Expiring' ? 'warning' : 'danger'}>{item.status}</Badge></td><td><div className="row-actions">{permissions.has('Edit') && <button className="icon-button" aria-label={`Edit ${item.name}`} onClick={() => setEditMedicine(item)}><Icon name="edit" size={17}/></button>}{permissions.has('Delete') && <button className="icon-button danger-text" aria-label={`Delete ${item.name}`} onClick={() => setDeleteTarget(item)}><Icon name="trash" size={16}/></button>}</div></td></tr>)}
           {!table.totalRows && (
             <EmptyTable colSpan={9}/>
           )}

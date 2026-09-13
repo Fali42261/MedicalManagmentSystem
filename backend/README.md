@@ -52,3 +52,14 @@ The bootstrap credentials only create the first administrator when that email do
 - Both responses contain the user and database-generated navigation permissions.
 - `GET /api/navigation/me` refreshes the authenticated user's menu.
 - The React app sends the JWT as a Bearer token and only renders modules with `View` permission.
+
+## Dynamic modules
+
+### Step 1 — Medicines
+
+- `GET /api/medicines` supports server-side search, status, sorting and pagination.
+- `GET /api/medicines/{id}` returns one active medicine.
+- `POST /api/medicines` creates a medicine.
+- `PUT /api/medicines/{id}` updates with row-version concurrency protection.
+- `DELETE /api/medicines/{id}` performs an audited soft delete.
+- Every endpoint checks the current user's database permission for View, Add, Edit or Delete.

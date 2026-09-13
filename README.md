@@ -48,7 +48,7 @@ CRUD business methods are available for medicine, partner and transaction operat
 
 ## .NET authentication backend
 
-The production-layered .NET 8 solution is under `backend/`. Login, signup, JWT authentication and database-driven sidebar permissions are connected to the React application through `VITE_BACKEND_API_BASE_URL`. See `backend/README.md` for SQL Server setup and secure configuration.
+The production-layered .NET 8 solution is under `backend/`. Login, signup, JWT authentication, database-driven sidebar permissions and the Medicines CRUD module are connected to the React application through `VITE_BACKEND_API_BASE_URL`. See `backend/README.md` for SQL Server setup and secure configuration.
 
 ## Quality checks
 
