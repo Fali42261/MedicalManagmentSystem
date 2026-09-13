@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react'
 import Icon from './components/Icon'
-import { Customers, Dashboard, Inventory, Login, Masters, Medicines, Purchases, Reports, Returns, Sales, Settings, Suppliers } from './pages'
+import { Accounts, Compliance, Customers, Dashboard, DataTools, Inventory, Login, Masters, Medicines, Purchases, Reports, Returns, Sales, Schemes, Settings, Stores, Suppliers, UsersRoles } from './pages'
 import './App.css'
 
 const navGroups = [
   { label: 'Workspace', items: [['dashboard', 'Overview', 'dashboard'], ['pill', 'Medicines', 'medicines'], ['box', 'Medicine Masters', 'masters'], ['box', 'Inventory', 'inventory']] },
   { label: 'Operations', items: [['receipt', 'Purchases', 'purchases'], ['cart', 'Sales & Billing', 'sales'], ['return', 'Returns', 'returns']] },
   { label: 'Partners', items: [['truck', 'Suppliers', 'suppliers'], ['users', 'Customers', 'customers']] },
-  { label: 'Insights', items: [['chart', 'Reports', 'reports']] },
+  { label: 'Finance', items: [['receipt', 'Schemes & Discounts', 'schemes'], ['chart', 'Accounts', 'accounts'], ['check', 'GST & Compliance', 'compliance']] },
+  { label: 'Management', items: [['store', 'Stores', 'stores'], ['users', 'Users & Roles', 'users'], ['chart', 'Reports', 'reports']] },
+  { label: 'System', items: [['download', 'Data & Backup', 'data-tools']] },
 ]
 
-const pageTitles = { dashboard: 'Overview', medicines: 'Medicines', masters: 'Medicine Masters', inventory: 'Inventory', purchases: 'Purchases', sales: 'Sales & Billing', returns: 'Returns', suppliers: 'Suppliers', customers: 'Customers', reports: 'Reports', settings: 'Settings' }
+const pageTitles = { dashboard: 'Overview', medicines: 'Medicines', masters: 'Medicine Masters', inventory: 'Inventory', purchases: 'Purchases', sales: 'Sales & Billing', returns: 'Returns', suppliers: 'Suppliers', customers: 'Customers', schemes: 'Schemes & Discounts', accounts: 'Accounts', compliance: 'GST & Compliance', stores: 'Stores', users: 'Users & Roles', reports: 'Reports', 'data-tools': 'Data & Backup', settings: 'Settings' }
 
 function getInitialTheme() {
   const saved = localStorage.getItem('medidesk-theme')
@@ -61,7 +63,13 @@ function App() {
     returns: <Returns {...commonProps} />,
     suppliers: <Suppliers {...commonProps} />,
     customers: <Customers {...commonProps} />,
+    schemes: <Schemes {...commonProps} />,
+    accounts: <Accounts {...commonProps} />,
+    compliance: <Compliance {...commonProps} />,
+    stores: <Stores {...commonProps} />,
+    users: <UsersRoles {...commonProps} />,
     reports: <Reports {...commonProps} />,
+    'data-tools': <DataTools {...commonProps} />,
     settings: <Settings {...commonProps} />,
   }
 
