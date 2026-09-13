@@ -94,6 +94,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(PermissionPolicies.AccountsView, policy => policy.AddRequirements(new PermissionRequirement("accounts", "View"))); options.AddPolicy(PermissionPolicies.AccountsAdd, policy => policy.AddRequirements(new PermissionRequirement("accounts", "Add")));
     options.AddPolicy(PermissionPolicies.ReportsView, policy => policy.AddRequirements(new PermissionRequirement("reports", "View"))); options.AddPolicy(PermissionPolicies.ComplianceView, policy => policy.AddRequirements(new PermissionRequirement("compliance", "View")));
     options.AddPolicy(PermissionPolicies.StoresView, policy => policy.AddRequirements(new PermissionRequirement("stores", "View"))); options.AddPolicy(PermissionPolicies.StoresAdd, policy => policy.AddRequirements(new PermissionRequirement("stores", "Add")));
+    options.AddPolicy(PermissionPolicies.UsersView, policy => policy.AddRequirements(new PermissionRequirement("users", "View"))); options.AddPolicy(PermissionPolicies.UsersEdit, policy => policy.AddRequirements(new PermissionRequirement("users", "Edit")));
 });
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
@@ -125,6 +126,7 @@ builder.Services.AddScoped<ISchemeRepository, SchemeRepository>();
 builder.Services.AddScoped<IAccountRepository, AccountRepository>();
 builder.Services.AddScoped<IReportingRepository, ReportingRepository>();
 builder.Services.AddScoped<IStoreRepository, StoreRepository>();
+builder.Services.AddScoped<IUserAdminRepository, UserAdminRepository>();
 builder.Services.AddScoped<INavigationService, NavigationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IMedicineService, MedicineService>();
@@ -139,6 +141,7 @@ builder.Services.AddScoped<ISchemeService, SchemeService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IReportingService, ReportingService>();
 builder.Services.AddScoped<IStoreService, StoreService>();
+builder.Services.AddScoped<IUserAdminService, UserAdminService>();
 builder.Services.AddScoped<IPasswordHasher<UserRecord>, PasswordHasher<UserRecord>>();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 builder.Services.AddHostedService<BootstrapAdminService>();
