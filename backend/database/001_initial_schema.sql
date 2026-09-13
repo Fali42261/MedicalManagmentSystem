@@ -95,6 +95,24 @@ BEGIN
     CREATE INDEX IX_Medicines_Search ON dbo.Medicines(Name, GenericName) INCLUDE (Category, Stock, MinimumStock, ExpiryDate) WHERE IsDeleted=0;
 END;
 
+IF OBJECT_ID('dbo.Customers','U') IS NULL
+BEGIN
+ CREATE TABLE dbo.Customers(
+  Id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Customers PRIMARY KEY,
+  FullName NVARCHAR(160) NOT NULL, Phone NVARCHAR(18) NOT NULL, Email NVARCHAR(256) NULL,
+  Address NVARCHAR(300) NULL, City NVARCHAR(100) NULL, State NVARCHAR(100) NULL,
+  CreditLimit DECIMAL(18,2) NOT NULL CONSTRAINT DF_Customers_CreditLimit DEFAULT(0),
+  CreditBalance DECIMAL(18,2) NOT NULL CONSTRAINT DF_Customers_CreditBalance DEFAULT(0),
+  IsActive BIT NOT NULL CONSTRAINT DF_Customers_IsActive DEFAULT(1), IsDeleted BIT NOT NULL CONSTRAINT DF_Customers_IsDeleted DEFAULT(0),
+  CreatedByUserId BIGINT NOT NULL, CreatedAtUtc DATETIME2 NOT NULL CONSTRAINT DF_Customers_Created DEFAULT(SYSUTCDATETIME()),
+  UpdatedByUserId BIGINT NULL, UpdatedAtUtc DATETIME2 NULL, RowVersion ROWVERSION NOT NULL,
+  CONSTRAINT FK_Customers_CreatedBy FOREIGN KEY(CreatedByUserId) REFERENCES dbo.Users(Id), CONSTRAINT FK_Customers_UpdatedBy FOREIGN KEY(UpdatedByUserId) REFERENCES dbo.Users(Id),
+  CONSTRAINT CK_Customers_Credit CHECK(CreditLimit>=0 AND CreditBalance>=0 AND CreditBalance<=CreditLimit)
+ );
+ CREATE UNIQUE INDEX UX_Customers_Phone_Active ON dbo.Customers(Phone) WHERE IsDeleted=0;
+ CREATE INDEX IX_Customers_Search ON dbo.Customers(FullName,Phone) WHERE IsDeleted=0;
+END;
+
 IF OBJECT_ID('dbo.InventoryMovements', 'U') IS NULL
 BEGIN
     CREATE TABLE dbo.InventoryMovements (
@@ -350,3 +368,4 @@ WHERE (
 AND NOT EXISTS (SELECT 1 FROM dbo.RolePermissions rp WHERE rp.RoleId=r.Id AND rp.PermissionId=p.Id);
 
 COMMIT TRANSACTION;
+

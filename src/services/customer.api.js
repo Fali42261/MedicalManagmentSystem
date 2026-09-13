@@ -1,0 +1,6 @@
+import { BACKEND_API_ENDPOINTS } from '../constants/api.constants'
+import { backendClient } from './backendClient'
+const map = (x) => ({ ...x, id: x.id, code: x.code, name: x.fullName, phone: x.phone, email: x.email || '', address: x.address || '', city: x.city || '', state: x.state || '', creditLimit: Number(x.creditLimit), credit: Number(x.creditBalance), creditBalance: Number(x.creditBalance), status: x.isActive ? 'Active' : 'Inactive', visits: 0, sales: 0, last: 'No purchases yet' })
+const payload = (x, version) => ({ fullName: x.name, phone: x.phone, email: x.email || null, address: x.address || null, city: x.city || null, state: x.state || null, creditLimit: Number(x.creditLimit || 0), ...(version ? { isActive: x.isActive, rowVersion: x.rowVersion } : {}) })
+export const customerApi = Object.freeze({ getAll: () => backendClient.get(BACKEND_API_ENDPOINTS.CUSTOMERS, { page: 1, pageSize: 200 }).then(r => r.items.map(map)), create: x => backendClient.post(BACKEND_API_ENDPOINTS.CUSTOMERS, payload(x)).then(map), update: (id,x) => backendClient.put(BACKEND_API_ENDPOINTS.CUSTOMER_BY_ID(id), payload(x,true)).then(map), delete: id => backendClient.delete(BACKEND_API_ENDPOINTS.CUSTOMER_BY_ID(id)) })
+

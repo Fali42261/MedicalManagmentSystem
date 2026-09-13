@@ -84,6 +84,10 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(PermissionPolicies.SalesView, policy => policy.AddRequirements(new PermissionRequirement("sales", "View")));
     options.AddPolicy(PermissionPolicies.SalesAdd, policy => policy.AddRequirements(new PermissionRequirement("sales", "Add")));
     options.AddPolicy(PermissionPolicies.SalesDelete, policy => policy.AddRequirements(new PermissionRequirement("sales", "Delete")));
+    options.AddPolicy(PermissionPolicies.CustomersView, policy => policy.AddRequirements(new PermissionRequirement("customers", "View")));
+    options.AddPolicy(PermissionPolicies.CustomersAdd, policy => policy.AddRequirements(new PermissionRequirement("customers", "Add")));
+    options.AddPolicy(PermissionPolicies.CustomersEdit, policy => policy.AddRequirements(new PermissionRequirement("customers", "Edit")));
+    options.AddPolicy(PermissionPolicies.CustomersDelete, policy => policy.AddRequirements(new PermissionRequirement("customers", "Delete")));
 });
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
@@ -109,6 +113,7 @@ builder.Services.AddScoped<IMedicineMasterRepository, MedicineMasterRepository>(
 builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
 builder.Services.AddScoped<IPurchaseRepository, PurchaseRepository>();
 builder.Services.AddScoped<ISaleRepository, SaleRepository>();
+builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<INavigationService, NavigationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IMedicineService, MedicineService>();
@@ -117,6 +122,7 @@ builder.Services.AddScoped<IMedicineMasterService, MedicineMasterService>();
 builder.Services.AddScoped<ISupplierService, SupplierService>();
 builder.Services.AddScoped<IPurchaseService, PurchaseService>();
 builder.Services.AddScoped<ISaleService, SaleService>();
+builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IPasswordHasher<UserRecord>, PasswordHasher<UserRecord>>();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 builder.Services.AddHostedService<BootstrapAdminService>();
@@ -137,3 +143,4 @@ app.MapControllers();
 app.Run();
 
 public partial class Program { }
+

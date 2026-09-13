@@ -96,7 +96,7 @@ function AppContent() {
     sales: <Sales {...commonProps} permissions={new Set(session?.menu?.find(item => item.key === 'sales')?.permissions || [])} />,
     returns: <Returns {...commonProps} />,
     suppliers: <Suppliers {...commonProps} permissions={new Set(session?.menu?.find(item => item.key === 'suppliers')?.permissions || [])} />,
-    customers: <Customers {...commonProps} />,
+    customers: <Customers {...commonProps} permissions={new Set(session?.menu?.find(item => item.key === 'customers')?.permissions || [])} />,
     schemes: <Schemes {...commonProps} />,
     accounts: <Accounts {...commonProps} />,
     compliance: <Compliance {...commonProps} />,
@@ -138,3 +138,4 @@ function App() {
 }
 
 export default App
+

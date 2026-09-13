@@ -26,6 +26,10 @@ public static class PermissionPolicies
     public const string SalesView = "sales:view";
     public const string SalesAdd = "sales:add";
     public const string SalesDelete = "sales:delete";
+    public const string CustomersView = "customers:view";
+    public const string CustomersAdd = "customers:add";
+    public const string CustomersEdit = "customers:edit";
+    public const string CustomersDelete = "customers:delete";
 }
 
 public sealed record PermissionRequirement(string ModuleKey, string Permission) : IAuthorizationRequirement;
@@ -42,3 +46,4 @@ public sealed class PermissionAuthorizationHandler(IPermissionRepository reposit
             context.Succeed(requirement);
     }
 }
+

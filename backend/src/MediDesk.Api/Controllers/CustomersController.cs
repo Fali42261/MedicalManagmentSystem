@@ -1,0 +1,10 @@
+using System.IdentityModel.Tokens.Jwt; using MediDesk.Api.Authorization; using MediDesk.Business.Interfaces; using MediDesk.Common.Contracts.Catalog; using MediDesk.Common.Contracts.Partners; using Microsoft.AspNetCore.Authorization; using Microsoft.AspNetCore.Mvc;
+namespace MediDesk.Api.Controllers;
+[ApiController][Route("api/customers")] public sealed class CustomersController(ICustomerService s):ControllerBase{
+ [HttpGet][Authorize(Policy=PermissionPolicies.CustomersView)] public async Task<ActionResult<PagedResponse<CustomerDto>>> GetPage([FromQuery] CustomerQuery q,CancellationToken ct)=>Ok(await s.GetPageAsync(q,ct));
+ [HttpGet("{id:long}")][Authorize(Policy=PermissionPolicies.CustomersView)] public async Task<ActionResult<CustomerDto>> Get(long id,CancellationToken ct){var x=await s.GetByIdAsync(id,ct);return x is null?NotFound():Ok(x);}
+ [HttpPost][Authorize(Policy=PermissionPolicies.CustomersAdd)] public async Task<ActionResult<CustomerDto>> Create(CreateCustomerRequest r,CancellationToken ct){try{var x=await s.CreateAsync(r,Uid(),ct);return CreatedAtAction(nameof(Get),new{id=x.Id},x);}catch(ArgumentException e){return BadRequest(new ProblemDetails{Title=e.Message});}catch(InvalidOperationException e){return Conflict(new ProblemDetails{Title=e.Message});}}
+ [HttpPut("{id:long}")][Authorize(Policy=PermissionPolicies.CustomersEdit)] public async Task<ActionResult<CustomerDto>> Update(long id,UpdateCustomerRequest r,CancellationToken ct){var x=await s.UpdateAsync(id,r,Uid(),ct);if(x.NotFound)return NotFound();if(x.Conflict)return Conflict(new ProblemDetails{Title="Customer changed by another user. Refresh and try again."});return Ok(await s.GetByIdAsync(id,ct));}
+ [HttpDelete("{id:long}")][Authorize(Policy=PermissionPolicies.CustomersDelete)] public async Task<IActionResult> Delete(long id,CancellationToken ct)=>await s.DeleteAsync(id,Uid(),ct)?NoContent():Conflict(new ProblemDetails{Title="Customer not found or has outstanding credit."}); private long Uid()=>long.Parse(User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
+}
+

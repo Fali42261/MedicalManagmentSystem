@@ -33,6 +33,8 @@ export const BACKEND_API_ENDPOINTS = Object.freeze({
   SALES: '/sales',
   SALES_CATALOG: '/sales/catalog',
   SALE_BY_ID: (id) => `/sales/${id}`,
+  CUSTOMERS: '/customers',
+  CUSTOMER_BY_ID: (id) => `/customers/${id}`,
 })
 
 export const API_QUERY = Object.freeze({
@@ -44,3 +46,4 @@ export const API_QUERY = Object.freeze({
 export const API_HEADERS = Object.freeze({
   JSON: { 'Content-Type': 'application/json' },
 })
+
